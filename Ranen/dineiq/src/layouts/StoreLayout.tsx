@@ -4,7 +4,7 @@ import {
   Badge, Button, Icon, IconButton, Avatar, Dropdown, MenuItemRow, SearchInput, cn,
 } from '../components/ui/primitives'
 import { Modal } from '../components/ui/overlay'
-import { DemoBanner, EmberMark, FoodImage } from '../components/shared'
+import { LiveBanner, EmberMark, FoodImage } from '../components/shared'
 import { useCart } from '../store/app'
 import { MENU, menuBySlug } from '../lib/data/menu'
 import { pkr } from '../lib/utils'
@@ -40,7 +40,7 @@ export default function StoreLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
-      <DemoBanner />
+      <LiveBanner />
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-line bg-white/92 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-3 px-4 sm:h-[72px] sm:px-6 lg:gap-6">

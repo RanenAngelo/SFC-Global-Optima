@@ -12,6 +12,8 @@ export function PageHeader({
   demoNote,
   onRefresh,
   exportLabel = 'Export',
+  dataset,
+  exportParams,
 }: {
   title: string
   subtitle?: React.ReactNode
@@ -21,6 +23,8 @@ export function PageHeader({
   demoNote?: string
   onRefresh?: () => void
   exportLabel?: string
+  dataset?: string
+  exportParams?: Record<string, string | number | boolean | null | undefined>
 }) {
   const { push } = useToast()
   return (
@@ -38,13 +42,17 @@ export function PageHeader({
             size="sm"
             icon="RefreshCw"
             onClick={() => {
-              onRefresh?.()
-              push({ title: 'Demo refresh', body: 'Static values re-rendered — nothing recalculated', tone: 'info' })
+              if (onRefresh) {
+                onRefresh()
+                push({ title: 'Refreshing live data', body: 'Re-querying the DineIQ API for this view.', tone: 'info' })
+              } else {
+                push({ title: 'Nothing to refresh', body: 'This view has no live query to re-run.', tone: 'info' })
+              }
             }}
           >
             Refresh
           </Button>
-          <ExportMenu label={exportLabel} />
+          <ExportMenu label={exportLabel} dataset={dataset} params={exportParams} />
         </div>
       </div>
       {demoNote && (

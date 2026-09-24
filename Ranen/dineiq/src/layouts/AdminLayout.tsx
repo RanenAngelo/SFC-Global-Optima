@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Avatar, Badge, Button, Dropdown, Icon, IconButton, MenuItemRow, Tooltip, cn,
 } from '../components/ui/primitives'
-import { DateRangeSelect, DemoBanner, DineIQMark, LocationSelect } from '../components/shared'
+import { DateRangeSelect, LiveBanner, DineIQMark, LocationSelect } from '../components/shared'
 import { useWorkspace } from '../store/app'
-import { RECENT_ALERTS } from '../lib/data/analytics'
+import { fmtDate, timeAgoISO, useApi, useAuth, useMeta } from '../lib/api'
 
 export type NavItem = { to: string; label: string; icon: string; badge?: string; end?: boolean }
 
@@ -34,14 +34,16 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { to: '/admin/promotions', label: 'Promotions', icon: 'BadgePercent' },
       { to: '/admin/ratings', label: 'Ratings & Reviews', icon: 'Star' },
-      { to: '/admin/anomalies', label: 'Sales Anomalies', icon: 'AlertTriangle', badge: '4' },
+      { to: '/admin/anomalies', label: 'Sales Anomalies', icon: 'AlertTriangle' },
       { to: '/admin/locations', label: 'Locations', icon: 'MapPinned' },
     ],
   },
   {
     title: 'Decisions',
     items: [
-      { to: '/admin/recommendations', label: 'Recommendations', icon: 'Lightbulb', badge: '10' },
+      { to: '/admin/recommendations', label: 'Recommendations', icon: 'Lightbulb' },
+      { to: '/admin/comparison', label: 'Model Comparison', icon: 'GitCompareArrows', badge: 'Core' },
+      { to: '/admin/what-if', label: 'What-If Lab', icon: 'FlaskConical' },
       { to: '/admin/reports', label: 'Reports', icon: 'FileBarChart' },
     ],
   },
@@ -51,19 +53,52 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   },
 ]
 
+type AnomalyAlert = {
+  category: string
+  entity: string
+  timestamp: string
+  severity: string
+  explanation: string
+}
+
 export default function AdminLayout() {
   const { pathname } = useLocation()
-  const { sidebarCollapsed, toggleSidebar } = useWorkspace()
+  const navigate = useNavigate()
+  const { sidebarCollapsed, toggleSidebar, theme, toggleTheme } = useWorkspace()
+  const { user, logout } = useAuth()
+  const { options: meta } = useMeta()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [alertsSeen, setAlertsSeen] = useState(false)
 
-  const allItems = useMemo(() => NAV_GROUPS.flatMap((g) => g.items), [])
+  const { data: alertData } = useApi<{ rows: AnomalyAlert[]; by_severity: { severity: string; n: number }[] }>(
+    '/anomalies',
+    { params: { limit: 4 } },
+  )
+  const alerts = useMemo(() => {
+    const rank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
+    return [...(alertData?.rows ?? [])].sort((a, b) => (rank[a.severity] ?? 9) - (rank[b.severity] ?? 9)).slice(0, 4)
+  }, [alertData])
+  const openAlerts = (alertData?.by_severity ?? []).filter((s) => s.severity === 'critical' || s.severity === 'high').reduce((s, r) => s + r.n, 0)
+
+  const navGroups = useMemo(
+    () =>
+      NAV_GROUPS.map((g) => ({
+        ...g,
+        items: g.items.map((i) =>
+          i.to === '/admin/anomalies' && openAlerts > 0 ? { ...i, badge: String(openAlerts) } : i,
+        ),
+      })),
+    [openAlerts],
+  )
+
+  const allItems = useMemo(() => navGroups.flatMap((g) => g.items), [navGroups])
   const current = useMemo(() => {
     const exact = allItems.find((i) => i.to === pathname)
     if (exact) return exact
     return [...allItems].filter((i) => !i.end).sort((a, b) => b.to.length - a.to.length).find((i) => pathname.startsWith(i.to))
   }, [pathname, allItems])
-  const group = useMemo(() => NAV_GROUPS.find((g) => g.items.some((i) => i.to === current?.to)), [current])
+  const group = useMemo(() => navGroups.find((g) => g.items.some((i) => i.to === current?.to)), [current, navGroups])
 
   const searchResults = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -84,7 +119,7 @@ export default function AdminLayout() {
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
-        {NAV_GROUPS.map((g) => (
+        {navGroups.map((g) => (
           <div key={g.title} className="mb-5">
             {(!sidebarCollapsed || mobile) && (
               <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-ink-faint">{g.title}</p>
@@ -126,10 +161,12 @@ export default function AdminLayout() {
           <div className="rounded-xl bg-canvas p-3.5">
             <div className="flex items-center gap-2">
               <Icon name="Database" size={14} className="text-ink-muted" />
-              <p className="text-[12px] font-semibold text-ink">Demo workspace</p>
+              <p className="text-[12px] font-semibold text-ink">Live workspace</p>
             </div>
             <p className="mt-1.5 text-[11.5px] leading-snug text-ink-muted">
-              All metrics are static placeholders. Data connection is not part of this prototype.
+              {meta
+                ? `${meta.restaurants.length} branches · data through ${fmtDate((meta.date_range.max as string).slice(0, 10), { withYear: true })}`
+                : 'Connecting to the DineIQ API…'}
             </p>
           </div>
         </div>
@@ -139,7 +176,7 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-canvas">
-      <DemoBanner />
+      <LiveBanner />
 
       {/* Desktop sidebar */}
       <aside
@@ -222,39 +259,59 @@ export default function AdminLayout() {
                 trigger={() => (
                   <span className="focus-ring relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-canvas hover:text-ink">
                     <Icon name="Bell" size={18} />
-                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2 border-white bg-clay-500" />
+                    {!alertsSeen && openAlerts > 0 && (
+                      <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2 border-white bg-clay-500" />
+                    )}
                   </span>
                 )}
               >
-                {() => (
+                {(close) => (
                   <>
                     <div className="flex items-center justify-between px-2.5 pb-2 pt-1">
                       <p className="text-[12px] font-bold uppercase tracking-wide text-ink-faint">Recent alerts</p>
-                      <span className="rounded-full bg-clay-50 px-1.5 py-0.5 text-[10px] font-bold text-clay-600">4 new</span>
+                      <span className="rounded-full bg-clay-50 px-1.5 py-0.5 text-[10px] font-bold text-clay-600">
+                        {openAlerts} open
+                      </span>
                     </div>
-                    {RECENT_ALERTS.map((a) => (
-                      <Link key={a.id} to="/admin/anomalies" className="flex gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-canvas">
-                        <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', a.tone === 'clay' ? 'bg-clay-500' : a.tone === 'gold' ? 'bg-gold-500' : a.tone === 'sky' ? 'bg-sky-500' : 'bg-sage-500')} />
+                    {alerts.length === 0 && (
+                      <p className="px-2.5 py-3 text-[12.5px] text-ink-muted">No anomalies detected — all quiet.</p>
+                    )}
+                    {alerts.map((a, i) => (
+                      <Link key={`${a.entity}-${i}`} to="/admin/anomalies" onClick={close} className="flex gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-canvas">
+                        <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', a.severity === 'critical' ? 'bg-clay-500' : a.severity === 'high' ? 'bg-gold-500' : 'bg-sky-500')} />
                         <span className="min-w-0">
-                          <span className="block truncate text-[12.5px] font-semibold text-ink">{a.title}</span>
-                          <span className="block text-[11.5px] leading-snug text-ink-muted">{a.body}</span>
-                          <span className="mt-0.5 block text-[11px] text-ink-faint">{a.time}</span>
+                          <span className="block truncate text-[12.5px] font-semibold text-ink">{a.category.replace(/_/g, ' ')} · {a.entity}</span>
+                          <span className="block text-[11.5px] leading-snug text-ink-muted">{a.explanation}</span>
+                          <span className="mt-0.5 block text-[11px] text-ink-faint">{timeAgoISO(a.timestamp)}</span>
                         </span>
                       </Link>
                     ))}
                     <div className="my-1 h-px bg-line" />
-                    <MenuItemRow icon="CheckCheck">Mark all as read</MenuItemRow>
+                    <MenuItemRow
+                      icon="CheckCheck"
+                      onClick={() => {
+                        setAlertsSeen(true)
+                        close()
+                      }}
+                    >
+                      Mark all as read
+                    </MenuItemRow>
                   </>
                 )}
               </Dropdown>
 
-              <IconButton icon="CircleHelp" label="Help centre" className="hidden sm:inline-flex" />
+              <IconButton
+                icon={theme === 'light' ? 'Moon' : 'Sun'}
+                label={theme === 'light' ? 'Switch to warm theme' : 'Switch to light theme'}
+                className="hidden sm:inline-flex"
+                onClick={toggleTheme}
+              />
 
               <Dropdown
                 width={230}
                 trigger={() => (
                   <span className="focus-ring ml-1 inline-flex items-center gap-2 rounded-xl py-1 pl-1 pr-2 transition-colors hover:bg-canvas">
-                    <Avatar name="Zohaib Ansari" size={30} tone="#B54E17" />
+                    <Avatar name={user?.username ?? '?'} size={30} tone="#B54E17" />
                     <Icon name="ChevronDown" size={14} className="text-ink-faint" />
                   </span>
                 )}
@@ -262,16 +319,26 @@ export default function AdminLayout() {
                 {(close) => (
                   <>
                     <div className="rounded-lg bg-canvas px-2.5 py-2.5">
-                      <p className="text-[13px] font-semibold text-ink">Zohaib Ansari</p>
-                      <p className="text-[11.5px] text-ink-muted">Owner · Maison Ember</p>
+                      <p className="text-[13px] font-semibold capitalize text-ink">{user?.username}</p>
+                      <p className="text-[11.5px] capitalize text-ink-muted">{user?.role} · DineIQ Analytics</p>
                     </div>
                     <div className="my-1 h-px bg-line" />
-                    <Link to="/admin/settings"><MenuItemRow icon="User">Profile & account</MenuItemRow></Link>
-                    <Link to="/admin/settings"><MenuItemRow icon="Building2">Restaurant profile</MenuItemRow></Link>
-                    <Link to="/admin/settings"><MenuItemRow icon="Users">Team & permissions</MenuItemRow></Link>
+                    <Link to="/admin/settings" onClick={close}><MenuItemRow icon="User">Profile & account</MenuItemRow></Link>
+                    <Link to="/admin/settings" onClick={close}><MenuItemRow icon="Building2">Restaurant profile</MenuItemRow></Link>
+                    <Link to="/admin/settings" onClick={close}><MenuItemRow icon="Users">Team & permissions</MenuItemRow></Link>
                     <div className="my-1 h-px bg-line" />
-                    <Link to="/"><MenuItemRow icon="Store">View customer store</MenuItemRow></Link>
-                    <MenuItemRow icon="LogOut" tone="danger" onClick={close}>Log out</MenuItemRow>
+                    <Link to="/" onClick={close}><MenuItemRow icon="Store">View customer store</MenuItemRow></Link>
+                    <MenuItemRow
+                      icon="LogOut"
+                      tone="danger"
+                      onClick={() => {
+                        logout()
+                        close()
+                        navigate('/login')
+                      }}
+                    >
+                      Log out
+                    </MenuItemRow>
                   </>
                 )}
               </Dropdown>

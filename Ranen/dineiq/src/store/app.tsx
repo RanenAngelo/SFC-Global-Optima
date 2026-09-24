@@ -36,39 +36,69 @@ type CartCtx = {
   clearPromo: () => void
   fulfilment: 'delivery' | 'pickup'
   setFulfilment: (v: 'delivery' | 'pickup') => void
+  policy: StorePolicy
+  promos: LivePromo[]
+  promoName: string | null
 }
 
 const CartContext = createContext<CartCtx>(null as unknown as CartCtx)
 export const useCart = () => useContext(CartContext)
 
-export const PROMOS: Record<string, { type: 'percent' | 'fixed' | 'free-delivery'; value: number; label: string }> = {
-  PIZZA20: { type: 'percent', value: 20, label: '20% off — Wednesday Pizza Night' },
-  BURGERFRIES: { type: 'fixed', value: 250, label: 'Free fries bundle' },
-  SWEET3000: { type: 'fixed', value: 650, label: 'Complimentary dessert' },
-  WELCOME10: { type: 'percent', value: 10, label: '10% welcome discount' },
-  FREESHIP: { type: 'free-delivery', value: 0, label: 'Free delivery' },
-}
+export type LivePromo = { code: string; name: string; discount_pct: number; scope: string }
 
-const DELIVERY_FEE = 150
-const TAX_RATE = 0.05
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
+
+export type StorePolicy = { deliveryFee: number; taxRate: number; freeDeliveryOver: number }
+export const DEFAULT_POLICY: StorePolicy = { deliveryFee: 2.99, taxRate: 0.05, freeDeliveryOver: 40 }
 
 function lineTotal(l: CartLine) {
   return (l.price + l.addons.reduce((s, a) => s + a.price, 0)) * l.qty
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [lines, setLines] = useState<CartLine[]>(() => [
-    // Demo cart contents — presentation only
-    { lineId: 'l1', slug: 'maison-signature-smash', name: 'Maison Signature Smash', price: 1150, qty: 2, img: '/img/hero-burger.jpg', size: 'Double', addons: [{ name: 'Add beef bacon', price: 220 }], instructions: '' },
-    { lineId: 'l2', slug: 'mint-lime-cooler', name: 'Mint Lime Cooler', price: 320, qty: 2, img: '/img/drink.jpg', addons: [] },
-    { lineId: 'l3', slug: 'molten-lava-cake', name: 'Molten Lava Cake', price: 650, qty: 1, img: '/img/dessert.jpg', addons: [{ name: 'Extra gelato scoop', price: 180 }] },
-  ])
-  const [saved, setSaved] = useState<CartLine[]>([
-    { lineId: 's1', slug: 'chicken-dum-biryani', name: 'Chicken Dum Biryani', price: 890, qty: 1, img: '/img/biryani.jpg', addons: [] },
-  ])
+  const [lines, setLines] = useState<CartLine[]>([])
+  const [saved, setSaved] = useState<CartLine[]>([])
   const [promo, setPromo] = useState<string | null>(null)
   const [promoError, setPromoError] = useState<string | null>(null)
   const [fulfilment, setFulfilment] = useState<'delivery' | 'pickup'>('delivery')
+  const [policy, setPolicy] = useState<StorePolicy>(DEFAULT_POLICY)
+  const [promos, setPromos] = useState<LivePromo[]>([])
+
+  // Live offer codes + fulfilment policy (public endpoints; plain fetch
+  // avoids a store <-> api module cycle).
+  React.useEffect(() => {
+    let live = true
+    fetch(`${API_BASE}/api/store/promotions`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (live && d?.promotions) {
+          setPromos(
+            d.promotions.map((p: { promotion_id: string; promotion_name: string; discount_pct: number; scope: string }) => ({
+              code: p.promotion_id,
+              name: p.promotion_name,
+              discount_pct: p.discount_pct,
+              scope: p.scope,
+            })),
+          )
+        }
+      })
+      .catch(() => {})
+    fetch(`${API_BASE}/api/store/policy`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (live && d) {
+          setPolicy({
+            deliveryFee: d.delivery_fee ?? DEFAULT_POLICY.deliveryFee,
+            taxRate: d.tax_rate ?? DEFAULT_POLICY.taxRate,
+            freeDeliveryOver: d.free_delivery_over ?? DEFAULT_POLICY.freeDeliveryOver,
+          })
+        }
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [])
 
   const add = useCallback<CartCtx['add']>((item, opts = {}) => {
     const key = `${item.slug}|${opts.size ?? ''}|${(opts.addons ?? []).map((a) => a.name).join(',')}`
@@ -126,16 +156,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setLines((prev) => prev.map((l) => (l.lineId === lineId ? { ...l, instructions: v } : l)))
   }, [])
 
-  const applyPromo = useCallback((code: string) => {
-    const c = code.trim().toUpperCase()
-    if (PROMOS[c]) {
-      setPromo(c)
-      setPromoError(null)
-      return true
-    }
-    setPromoError(`“${code}” is not a valid demo promo code. Try PIZZA20, WELCOME10 or FREESHIP.`)
-    return false
-  }, [])
+  const applyPromo = useCallback(
+    (code: string) => {
+      const c = code.trim().toUpperCase()
+      const found = promos.find((p) => p.code.toUpperCase() === c)
+      if (found) {
+        setPromo(found.code)
+        setPromoError(null)
+        return true
+      }
+      const hint = promos.length > 0 ? `Try ${promos.slice(0, 3).map((p) => p.code).join(', ')}.` : 'Offer codes load with the menu.'
+      setPromoError(`“${code}” is not a valid offer code. ${hint}`)
+      return false
+    },
+    [promos],
+  )
 
   const clearPromo = useCallback(() => {
     setPromo(null)
@@ -143,18 +178,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const totals = useMemo<Totals>(() => {
-    const subtotal = lines.reduce((s, l) => s + lineTotal(l), 0)
+    const round2 = (n: number) => Math.round(n * 100) / 100
+    const subtotal = round2(lines.reduce((s, l) => s + lineTotal(l), 0))
     let discount = 0
-    let delivery = fulfilment === 'delivery' ? (subtotal > 0 ? DELIVERY_FEE : 0) : 0
-    if (promo && PROMOS[promo]) {
-      const p = PROMOS[promo]
-      if (p.type === 'percent') discount = Math.round(subtotal * (p.value / 100))
-      else if (p.type === 'fixed') discount = Math.min(p.value, subtotal)
-      else delivery = 0
+    const active = promo ? promos.find((p) => p.code === promo) : undefined
+    if (active) discount = round2(subtotal * active.discount_pct)
+    const afterDiscount = subtotal - discount
+    let delivery = 0
+    if (fulfilment === 'delivery' && subtotal > 0) {
+      delivery = afterDiscount >= policy.freeDeliveryOver ? 0 : policy.deliveryFee
     }
-    const tax = Math.round((subtotal - discount) * TAX_RATE)
-    return { subtotal, discount, delivery, tax, total: subtotal - discount + delivery + tax }
-  }, [lines, promo, fulfilment])
+    const tax = round2(afterDiscount * policy.taxRate)
+    return { subtotal, discount, delivery, tax, total: round2(afterDiscount + delivery + tax) }
+  }, [lines, promo, promos, fulfilment, policy])
 
   const value = useMemo<CartCtx>(
     () => ({
@@ -176,8 +212,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       clearPromo,
       fulfilment,
       setFulfilment,
+      policy,
+      promos,
+      promoName: promo ? (promos.find((p) => p.code === promo)?.name ?? null) : null,
     }),
-    [lines, saved, promo, promoError, totals, add, setQty, remove, saveForLater, moveToCart, clear, setInstructions, applyPromo, clearPromo, fulfilment],
+    [lines, saved, promo, promoError, totals, add, setQty, remove, saveForLater, moveToCart, clear, setInstructions, applyPromo, clearPromo, fulfilment, policy, promos],
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
@@ -189,7 +228,7 @@ const FavContext = createContext<FavCtx>(null as unknown as FavCtx)
 export const useFavourites = () => useContext(FavContext)
 
 export function FavouritesProvider({ children }: { children: React.ReactNode }) {
-  const [favourites, setFavourites] = useState<string[]>(() => readPref<string[]>('favourites', ['maison-signature-smash', 'chicken-dum-biryani', 'truffle-fettuccine-alfredo']))
+  const [favourites, setFavourites] = useState<string[]>(() => readPref<string[]>('favourites', []))
   const toggle = useCallback((slug: string) => {
     setFavourites((prev) => {
       const next = prev.includes(slug) ? prev.filter((s) => s !== slug) : [slug, ...prev]
@@ -260,7 +299,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
 /* ───────────────────────────── Orders placed in-session (UI only) ───────────────────────────── */
 export function useLastOrderNumber() {
-  return readPref<string>('lastOrder', 'ME-24816')
+  return readPref<string>('lastOrder', '')
 }
 
 export { menuBySlug }

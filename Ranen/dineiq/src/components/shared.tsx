@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { Badge, Button, Card, Icon, IconButton, Tooltip, cn } from './ui/primitives'
 import { hash } from '../lib/utils'
 import { RANGE_LABELS, useWorkspace } from '../store/app'
+import { downloadExport, useMeta, fmtDate } from '../lib/api'
+import { useToast } from './ui/overlay'
 
 export { Progress, Stars, Badge, Button, Card, Icon } from './ui/primitives'
 
@@ -258,7 +260,7 @@ export function DateRangeSelect({ className }: { className?: string }) {
               </button>
             ))}
             <div className="mt-1 border-t border-line px-2.5 pb-1 pt-2 text-[11px] text-ink-faint">
-              Demo control — no data is recalculated.
+              Anchored to the dataset window — every view recalculates.
             </div>
           </div>
         </>
@@ -269,11 +271,13 @@ export function DateRangeSelect({ className }: { className?: string }) {
 
 export function LocationSelect({ className, variant = 'toolbar' }: { className?: string; variant?: 'toolbar' | 'select' }) {
   const { location, setLocation } = useWorkspace()
+  const { options: meta } = useMeta()
   const options = [
     { value: 'all', label: 'All locations' },
-    { value: 'clifton', label: 'Clifton Branch' },
-    { value: 'downtown', label: 'Downtown Branch' },
-    { value: 'gulshan', label: 'Gulshan Branch' },
+    ...(meta?.restaurants ?? []).map((r) => ({
+      value: r.restaurant_id,
+      label: `${r.city} · ${r.restaurant_name.replace(/^DineIQ\s+/, '')}`,
+    })),
   ]
   const current = options.find((o) => o.value === location) ?? options[0]
 
@@ -315,8 +319,43 @@ export function LocationSelect({ className, variant = 'toolbar' }: { className?:
   )
 }
 
-export function ExportMenu({ label = 'Export' }: { label?: string }) {
+export function ExportMenu({
+  label = 'Export',
+  dataset,
+  params,
+}: {
+  label?: string
+  dataset?: string
+  params?: Record<string, string | number | boolean | null | undefined>
+}) {
   const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)
+  const { push } = useToast()
+
+  async function download(format: 'csv' | 'xlsx') {
+    if (!dataset) return
+    setBusy(format)
+    try {
+      await downloadExport(dataset, format, params)
+      push({ title: 'Export ready', body: `${dataset}.${format} downloaded from the live API.`, tone: 'success' })
+    } catch (e) {
+      push({ title: 'Export failed', body: e instanceof Error ? e.message : 'Unknown error', tone: 'error' })
+    } finally {
+      setBusy(null)
+      setOpen(false)
+    }
+  }
+
+  function copyLink() {
+    try {
+      void navigator.clipboard.writeText(window.location.href)
+      push({ title: 'Link copied', body: 'View URL copied to clipboard.', tone: 'success' })
+    } catch {
+      push({ title: 'Copy failed', body: 'Clipboard unavailable in this browser.', tone: 'error' })
+    }
+    setOpen(false)
+  }
+
   return (
     <div className="relative">
       <Button variant="secondary" size="sm" icon="Download" onClick={() => setOpen((o) => !o)}>
@@ -325,18 +364,33 @@ export function ExportMenu({ label = 'Export' }: { label?: string }) {
       {open && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-40 mt-2 w-52 overflow-hidden rounded-xl border border-line bg-white p-1.5 shadow-pop animate-scale-in">
-            {['Download PDF', 'Download CSV', 'Download Excel', 'Copy link to view'].map((i) => (
-              <button
-                key={i}
-                onClick={() => setOpen(false)}
-                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-ink-soft transition-colors hover:bg-canvas hover:text-ink"
-              >
-                <Icon name={i.includes('PDF') ? 'FileText' : i.includes('CSV') || i.includes('Excel') ? 'Sheet' : 'Link'} size={14} />
-                {i}
-              </button>
-            ))}
-            <p className="border-t border-line px-2.5 pb-1 pt-2 text-[11px] text-ink-faint">Demo control — no file is generated.</p>
+          <div className="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-xl border border-line bg-white p-1.5 shadow-pop animate-scale-in">
+            <button
+              onClick={() => void download('csv')}
+              disabled={!dataset || busy !== null}
+              className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-ink-soft transition-colors hover:bg-canvas hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Icon name={busy === 'csv' ? 'LoaderCircle' : 'Sheet'} size={14} className={busy === 'csv' ? 'animate-spin' : ''} />
+              Download CSV
+            </button>
+            <button
+              onClick={() => void download('xlsx')}
+              disabled={!dataset || busy !== null}
+              className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-ink-soft transition-colors hover:bg-canvas hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Icon name={busy === 'xlsx' ? 'LoaderCircle' : 'Sheet'} size={14} className={busy === 'xlsx' ? 'animate-spin' : ''} />
+              Download Excel
+            </button>
+            <button
+              onClick={copyLink}
+              className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-ink-soft transition-colors hover:bg-canvas hover:text-ink"
+            >
+              <Icon name="Link" size={14} />
+              Copy link to view
+            </button>
+            <p className="border-t border-line px-2.5 pb-1 pt-2 text-[11px] text-ink-faint">
+              {dataset ? `Live export · ${dataset} from the DineIQ API.` : 'No downloadable dataset on this view.'}
+            </p>
           </div>
         </>
       )}
@@ -350,6 +404,44 @@ export function DemoNote({ children, className }: { children: React.ReactNode; c
     <div className={cn('flex items-start gap-2.5 rounded-xl border border-gold-100 bg-gold-50/70 px-3.5 py-2.5 text-[12px] leading-relaxed text-gold-600', className)}>
       <Icon name="Info" size={14} className="mt-px shrink-0" />
       <span>{children}</span>
+    </div>
+  )
+}
+
+/** Live-data disclosure strip: replaces DemoNote once a view is API-wired. */
+export function LiveNote({ children, className }: { children?: React.ReactNode; className?: string }) {
+  const { options } = useMeta()
+  const max = (options?.date_range?.max as string | undefined)?.slice(0, 10)
+  return (
+    <div className={cn('flex items-start gap-2.5 rounded-xl border border-sage-100 bg-sage-50/70 px-3.5 py-2.5 text-[12px] leading-relaxed text-sage-700', className)}>
+      <Icon name="Activity" size={14} className="mt-px shrink-0" />
+      <span>
+        {children ?? (
+          <>
+            Live figures served by the DineIQ API from the project dataset
+            {max ? <> (orders through {fmtDate(max, { withYear: true })})</> : null}. Filters above recalculate every value.
+          </>
+        )}
+      </span>
+    </div>
+  )
+}
+
+export function LiveBanner() {
+  const [open, setOpen] = useState(true)
+  const { options } = useMeta()
+  if (!open) return null
+  const max = (options?.date_range?.max as string | undefined)?.slice(0, 10)
+  return (
+    <div className="relative z-40 bg-ink px-4 py-2 text-center text-[12px] font-medium text-white/85">
+      <span className="mr-2 inline-flex items-center gap-1.5 rounded-full bg-sage-500/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+        <span className="h-1.5 w-1.5 rounded-full bg-sage-400" /> Live
+      </span>
+      Connected to the DineIQ API — every figure on this page is computed from the project dataset
+      {max ? ` (through ${fmtDate(max, { withYear: true })})` : ''}.
+      <button onClick={() => setOpen(false)} aria-label="Dismiss notice" className="ml-3 rounded p-0.5 align-middle text-white/60 transition-colors hover:text-white">
+        <Icon name="X" size={13} />
+      </button>
     </div>
   )
 }

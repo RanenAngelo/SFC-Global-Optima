@@ -5,18 +5,23 @@ import App from './App'
 import './index.css'
 import { ToastProvider } from './components/ui/overlay'
 import { CartProvider, FavouritesProvider, WorkspaceProvider } from './store/app'
+import { AuthProvider, MetaProvider } from './lib/api'
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <ToastProvider>
-        <WorkspaceProvider>
-          <FavouritesProvider>
-            <CartProvider>
-              <App />
-            </CartProvider>
-          </FavouritesProvider>
-        </WorkspaceProvider>
+        <AuthProvider>
+          <MetaProvider>
+            <WorkspaceProvider>
+              <FavouritesProvider>
+                <CartProvider>
+                  <App />
+                </CartProvider>
+              </FavouritesProvider>
+            </WorkspaceProvider>
+          </MetaProvider>
+        </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
   </React.StrictMode>,

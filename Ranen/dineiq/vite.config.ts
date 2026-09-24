@@ -9,5 +9,11 @@ export default defineConfig({
     strictPort: false,
     allowedHosts: true as any,
     hmr: { protocol: 'wss', clientPort: 443 } as any,
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_PROXY ?? 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
   },
 })

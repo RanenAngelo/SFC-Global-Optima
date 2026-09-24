@@ -16,6 +16,31 @@ router = APIRouter()
 
 
 # ---- public storefront -------------------------------------------------------
+STORE_POLICY = {
+    "currency": "USD",
+    "currency_note": "Dataset-native currency; all figures in US dollars.",
+    "delivery_fee": 2.99,
+    "tax_rate": 0.05,
+    "free_delivery_over": 40.0,
+    "source": "config: branch fulfilment policy (edit STORE_POLICY in commerce.py)",
+}
+
+
+@router.get("/store/policy")
+def store_policy():
+    """Public fulfilment policy constants (config, not analytics)."""
+    return STORE_POLICY
+
+
+@router.get("/store/promotions")
+def store_promotions():
+    """Public offer-code list. Any code here is accepted at checkout and its
+    discount_pct is applied by POST /store/orders (see place_order)."""
+    return {"promotions": deps.q(
+        "SELECT promotion_id, promotion_name, scope, target_id, discount_pct,"
+        " start_date, end_date FROM promotions ORDER BY promotion_id")}
+
+
 @router.get("/store/menu")
 def store_menu(restaurant_id: str | None = None, category_id: str | None = None,
                q: str | None = None):

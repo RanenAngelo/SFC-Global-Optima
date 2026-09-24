@@ -22,6 +22,10 @@ import {
 import { AboutPage, ContactPage, OffersPage } from './pages/store/StaticPages'
 
 import AdminLayout from './layouts/AdminLayout'
+import Login from './pages/admin/Login'
+import Comparison from './pages/admin/Comparison'
+import WhatIf from './pages/admin/WhatIf'
+import { RequireAuth } from './lib/api'
 import Overview from './pages/admin/Overview'
 import Orders from './pages/admin/Orders'
 import MenuManagement from './pages/admin/MenuManagement'
@@ -76,8 +80,17 @@ export default function App() {
         </Route>
       </Route>
 
+      <Route path="/login" element={<Login />} />
+
       {/* ── Restaurant owner / admin dashboard ─────────────────────── */}
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route
+        path="/admin"
+        element={
+          <RequireAuth>
+            <AdminLayout />
+          </RequireAuth>
+        }
+      >
         <Route index element={<Overview />} />
         <Route path="orders" element={<Orders />} />
         <Route path="menu" element={<MenuManagement />} />
@@ -93,6 +106,8 @@ export default function App() {
         <Route path="locations" element={<Locations />} />
         <Route path="locations/:id" element={<LocationDetail />} />
         <Route path="recommendations" element={<Recommendations />} />
+        <Route path="comparison" element={<Comparison />} />
+        <Route path="what-if" element={<WhatIf />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
       </Route>

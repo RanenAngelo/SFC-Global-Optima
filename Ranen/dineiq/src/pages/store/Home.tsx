@@ -5,7 +5,7 @@ import { FoodImage } from '../../components/shared'
 import { DishCard } from '../../components/store/DishCard'
 import { CATEGORIES, MENU, POPULAR_ITEMS, VEG_ITEMS } from '../../lib/data/menu'
 import { OFFERS, OPENING_HOURS, REVIEWS, SPECIALTIES } from '../../lib/data/store'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 
 const FEATURES = [
   { icon: 'Flame', title: 'Live fire cooking', body: 'Charcoal grill and cast iron, fired from open till close.' },
@@ -97,7 +97,7 @@ export default function Home() {
                   <img src="/img/pizza.jpg" alt="Woodfired pepperoni pizza" className="aspect-square w-full object-cover" />
                 </div>
                 <p className="mt-2.5 text-[13px] font-semibold text-ink">Woodfired Pizza</p>
-                <p className="text-[11.5px] text-ink-muted">From {pkr(1250)}</p>
+                <p className="text-[11.5px] text-ink-muted">From {money(1250)}</p>
               </div>
 
               <div className="absolute -right-2 top-6 hidden rounded-2xl border border-line bg-white/96 px-4 py-3 shadow-pop backdrop-blur sm:block lg:-right-6">
@@ -405,7 +405,7 @@ export default function Home() {
                   <FoodImage src={m.img} name={m.name} ratio="square" rounded="none" />
                   <div className="p-2.5">
                     <p className="truncate text-[12px] font-semibold text-ink group-hover:text-ember-700">{m.name}</p>
-                    <p className="text-[11.5px] font-bold text-ink-muted">{pkr(m.price)}</p>
+                    <p className="text-[11.5px] font-bold text-ink-muted">{money(m.price)}</p>
                   </div>
                 </Link>
               ))}

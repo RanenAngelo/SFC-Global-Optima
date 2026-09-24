@@ -4,7 +4,7 @@ import { InfoCard, KpiCard, LiveNote, MetricRow } from '../../components/shared'
 import { PageHeader } from '../../components/admin/PageHeader'
 import { PageError, PageLoader, apiFetch, useApi, useAuth } from '../../lib/api'
 import { useToast } from '../../components/ui/overlay'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 
 type MenuItem = { item_id: string; item_name: string; base_price: number; category_name: string }
 type WhatIfOut = {
@@ -37,7 +37,7 @@ const IMPACT_LABELS: Record<string, { label: string; money?: boolean; suffix?: s
 function ImpactValue({ k, v }: { k: string; v: number | null }) {
   const meta = IMPACT_LABELS[k] ?? { label: k }
   if (v === null || v === undefined) return <span className="text-ink-faint">n/a</span>
-  const txt = meta.money ? pkr(v, { decimals: true }) : `${v}${meta.suffix ?? ''}`
+  const txt = meta.money ? money(v, { decimals: true }) : `${v}${meta.suffix ?? ''}`
   const good = v >= 0
   return (
     <span className={good ? 'text-sage-600' : 'text-clay-600'}>
@@ -125,7 +125,7 @@ export default function WhatIf() {
               <Select value={itemId} onChange={(e) => setItemId(e.target.value)}>
                 {active.map((i) => (
                   <option key={i.item_id} value={i.item_id}>
-                    {i.item_name} · {pkr(i.base_price)} · {i.category_name}
+                    {i.item_name} · {money(i.base_price)} · {i.category_name}
                   </option>
                 ))}
               </Select>
@@ -152,7 +152,7 @@ export default function WhatIf() {
             </Field>
 
             {scenario === 'price' && (
-              <Field label={`New price (current ${item ? pkr(item.base_price) : '—'})`}>
+              <Field label={`New price (current ${item ? money(item.base_price) : '—'})`}>
                 <Input icon="Tag" type="number" step="0.01" min="0.01" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} />
               </Field>
             )}
@@ -221,7 +221,7 @@ export default function WhatIf() {
                     value={
                       v === null || v === undefined
                         ? 'n/a'
-                        : (IMPACT_LABELS[k]?.money ? pkr(v, { decimals: true }) : `${v}${IMPACT_LABELS[k]?.suffix ?? ''}`)
+                        : (IMPACT_LABELS[k]?.money ? money(v, { decimals: true }) : `${v}${IMPACT_LABELS[k]?.suffix ?? ''}`)
                     }
                     icon={k.includes('revenue') ? 'Banknote' : k.includes('margin') || k.includes('profit') ? 'PiggyBank' : 'Activity'}
                     tone={v !== null && v !== undefined && v >= 0 ? 'sage' : 'clay'}

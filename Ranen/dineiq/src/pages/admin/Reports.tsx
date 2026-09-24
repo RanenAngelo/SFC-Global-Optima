@@ -7,7 +7,7 @@ import { EmptyState } from '../../components/ui/states'
 import { PageHeader } from '../../components/admin/PageHeader'
 import { DateRangeSelect, LocationSelect } from '../../components/shared'
 import { REPORTS, REPORT_PREVIEW_ROWS } from '../../lib/data/analytics'
-import { pkr, num } from '../../lib/utils'
+import { money, num } from '../../lib/utils'
 
 const CATEGORIES = ['All', ...Array.from(new Set(REPORTS.map((r) => r.category)))]
 
@@ -198,9 +198,9 @@ export default function Reports() {
 
                 <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
                   {[
-                    { l: 'Revenue', v: pkr(1248500, { compact: true }) },
+                    { l: 'Revenue', v: money(1248500, { compact: true }) },
                     { l: 'Orders', v: '4,286' },
-                    { l: 'Avg order', v: pkr(1140) },
+                    { l: 'Avg order', v: money(1140) },
                     { l: 'Margin', v: '39.0%' },
                   ].map((s) => (
                     <div key={s.l} className="rounded-xl border border-line p-3.5">
@@ -226,9 +226,9 @@ export default function Reports() {
                       <tr key={r.item} className="border-b border-line/60">
                         <td className="py-2 text-[12.5px] font-medium text-ink">{r.item}</td>
                         <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{num(r.units)}</td>
-                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{pkr(r.revenue, { compact: true })}</td>
-                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{pkr(r.cost, { compact: true })}</td>
-                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{pkr(r.margin, { compact: true })}</td>
+                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{money(r.revenue, { compact: true })}</td>
+                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{money(r.cost, { compact: true })}</td>
+                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{money(r.margin, { compact: true })}</td>
                         <td className="py-2 text-[12.5px] font-semibold tabular-nums text-ink">{r.marginPct.toFixed(1)}%</td>
                       </tr>
                     ))}

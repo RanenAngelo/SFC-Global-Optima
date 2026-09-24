@@ -9,7 +9,7 @@ import { DemoNote, KpiCard, MetricRow, Progress, ProgressRing } from '../../comp
 import {
   CUSTOMERS, CUSTOMER_KPIS, CUSTOMER_TIMELINE, FAVOURITE_CATEGORIES, SEGMENTS, SEGMENT_TREND, TIME_PREFERENCE, type Customer,
 } from '../../lib/data/analytics'
-import { pkr, num } from '../../lib/utils'
+import { money, num } from '../../lib/utils'
 
 const SEG_COLOR: Record<string, string> = Object.fromEntries(SEGMENTS.map((s) => [s.name, s.color]))
 
@@ -57,8 +57,8 @@ export default function Customers() {
       ),
     },
     { key: 'orders', header: 'Orders', align: 'right', sort: (a, b) => a.orders - b.orders, render: (c) => <span className="tabular-nums text-ink-soft">{c.orders}</span> },
-    { key: 'spend', header: 'Lifetime spend', align: 'right', sort: (a, b) => a.spend - b.spend, render: (c) => <span className="font-semibold tabular-nums text-ink">{pkr(c.spend)}</span> },
-    { key: 'aov', header: 'Avg order', align: 'right', hideBelow: 'lg', sort: (a, b) => a.aov - b.aov, render: (c) => <span className="tabular-nums text-ink-soft">{pkr(c.aov)}</span> },
+    { key: 'spend', header: 'Lifetime spend', align: 'right', sort: (a, b) => a.spend - b.spend, render: (c) => <span className="font-semibold tabular-nums text-ink">{money(c.spend)}</span> },
+    { key: 'aov', header: 'Avg order', align: 'right', hideBelow: 'lg', sort: (a, b) => a.aov - b.aov, render: (c) => <span className="tabular-nums text-ink-soft">{money(c.aov)}</span> },
     { key: 'recency', header: 'Recency', align: 'right', hideBelow: 'xl', sort: (a, b) => a.recency - b.recency, render: (c) => <span className="tabular-nums text-ink-muted">{c.recency}d</span> },
     {
       key: 'rfm',
@@ -162,9 +162,9 @@ export default function Customers() {
                 </div>
                 <div className="grid grid-cols-3 divide-x divide-line border-t border-line">
                   {[
-                    { l: 'Avg order', v: pkr(s.aov) },
+                    { l: 'Avg order', v: money(s.aov) },
                     { l: 'Orders / mo', v: s.freq.toFixed(1) },
-                    { l: 'Est. CLV', v: pkr(s.clv, { compact: true }) },
+                    { l: 'Est. CLV', v: money(s.clv, { compact: true }) },
                   ].map((m) => (
                     <div key={m.l} className="px-3 py-2.5">
                       <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{m.l}</p>
@@ -396,9 +396,9 @@ export default function Customers() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 { l: 'Orders', v: `${active.orders}` },
-                { l: 'Lifetime spend', v: pkr(active.spend) },
-                { l: 'Avg order', v: pkr(active.aov) },
-                { l: 'Est. CLV', v: pkr(SEGMENTS.find((s) => s.name === active.segment)?.clv ?? 0, { compact: true }) },
+                { l: 'Lifetime spend', v: money(active.spend) },
+                { l: 'Avg order', v: money(active.aov) },
+                { l: 'Est. CLV', v: money(SEGMENTS.find((s) => s.name === active.segment)?.clv ?? 0, { compact: true }) },
               ].map((s) => (
                 <div key={s.l} className="rounded-xl border border-line bg-white p-3.5">
                   <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">{s.l}</p>

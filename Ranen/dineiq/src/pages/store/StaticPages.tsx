@@ -5,7 +5,7 @@ import { FoodImage } from '../../components/shared'
 import { OFFERS, OPENING_HOURS, SPECIALTIES } from '../../lib/data/store'
 import { useToast } from '../../components/ui/overlay'
 import { MENU } from '../../lib/data/menu'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 
 /* ══════════════════════════════ Offers ══════════════════════════════ */
 export function OffersPage() {

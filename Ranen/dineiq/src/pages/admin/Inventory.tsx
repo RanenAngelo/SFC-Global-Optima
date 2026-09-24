@@ -8,7 +8,7 @@ import { DemoNote, KpiCard, MetricRow, Progress, StatusDot } from '../../compone
 import {
   INVENTORY, PREP_VS_CONSUMPTION, WASTAGE_BY_CATEGORY, WASTAGE_BY_LOCATION, WASTAGE_RISK, WASTAGE_TREND, type InventoryItem,
 } from '../../lib/data/analytics'
-import { pkr, num } from '../../lib/utils'
+import { money, num } from '../../lib/utils'
 
 const STATUS_TONE: Record<string, 'sage' | 'gold' | 'clay' | 'sky'> = {
   Healthy: 'sage', Low: 'gold', Critical: 'clay', Overstocked: 'sky',
@@ -113,7 +113,7 @@ export default function Inventory() {
       align: 'right',
       hideBelow: 'xl',
       sort: (a, b) => a.costPerUnit - b.costPerUnit,
-      render: (i) => <span className="tabular-nums text-ink-soft">{pkr(i.costPerUnit)}</span>,
+      render: (i) => <span className="tabular-nums text-ink-soft">{money(i.costPerUnit)}</span>,
     },
     {
       key: 'lastDelivery',
@@ -153,7 +153,7 @@ export default function Inventory() {
         <KpiCard label="Tracked ingredients" value={`${INVENTORY.length}`} compare="demo SKUs" icon="Package" tone="ember" />
         <KpiCard label="Low stock alerts" value={`${critical.length}`} compare="need reordering" icon="AlertTriangle" tone="gold" />
         <KpiCard label="Average wastage" value="6.8%" change={-0.7} compare="vs previous period" icon="Trash2" tone="clay" />
-        <KpiCard label="Est. monthly waste cost" value={pkr(72260, { compact: true })} compare="illustrative" icon="Coins" tone="clay" />
+        <KpiCard label="Est. monthly waste cost" value={money(72260, { compact: true })} compare="illustrative" icon="Coins" tone="clay" />
       </div>
 
       {/* Alerts */}
@@ -275,7 +275,7 @@ export default function Inventory() {
                   { key: 'waste', label: 'Wastage %', color: '#96352C', type: 'bar' },
                   { key: 'cost', label: 'Estimated cost', color: '#C08A16', type: 'line' },
                 ]}
-                valueFormat={(v, n) => (n === 'Wastage %' ? `${v}%` : pkr(v))}
+                valueFormat={(v, n) => (n === 'Wastage %' ? `${v}%` : money(v))}
               />
             </ChartCard>
           </div>
@@ -420,8 +420,8 @@ export default function Inventory() {
                 <MetricRow label="Reorder point" value={`${active.reorder} ${active.unit}`} />
                 <MetricRow label="Average daily use" value={`${active.usedPerDay} ${active.unit}`} />
                 <MetricRow label="Days of cover" value={`${(active.stock / active.usedPerDay).toFixed(1)} days`} />
-                <MetricRow label="Cost per unit" value={pkr(active.costPerUnit)} />
-                <MetricRow label="Stock value" value={pkr(active.stock * active.costPerUnit)} />
+                <MetricRow label="Cost per unit" value={money(active.costPerUnit)} />
+                <MetricRow label="Stock value" value={money(active.stock * active.costPerUnit)} />
                 <MetricRow label="Supplier" value={active.supplier} />
                 <MetricRow label="Last delivery" value={active.lastDelivery} />
               </div>

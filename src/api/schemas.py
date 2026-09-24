@@ -49,6 +49,21 @@ class MenuAvailability(BaseModel):
     is_active: bool
 
 
+class MenuItemUpdate(BaseModel):
+    is_active: Optional[bool] = None
+    item_name: Optional[str] = None
+    category_id: Optional[str] = None
+    base_cost: Optional[float] = Field(default=None, ge=0)
+
+
+class MenuItemCreate(BaseModel):
+    item_name: str = Field(min_length=2, max_length=120)
+    category_id: str
+    base_cost: float = Field(ge=0)
+    base_price: float = Field(gt=0)
+    is_active: bool = True
+
+
 class MenuPriceUpdate(BaseModel):
     new_price: float = Field(gt=0)
 

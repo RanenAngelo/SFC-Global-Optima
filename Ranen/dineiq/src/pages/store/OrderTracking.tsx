@@ -4,7 +4,7 @@ import { Badge, Button, Card, Icon, Select, cn } from '../../components/ui/primi
 import { FoodImage } from '../../components/shared'
 import { CUSTOMER_ORDERS, ORDER_STEPS, PICKUP_STEPS } from '../../lib/data/store'
 import { menuBySlug } from '../../lib/data/menu'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 import { useCart } from '../../store/app'
 import { useToast } from '../../components/ui/overlay'
 import { EmptyState } from '../../components/ui/states'
@@ -55,7 +55,7 @@ export default function OrderTracking() {
                 {order.status === 'Delivered' ? 'Delivered' : `Arriving in about ${eta} minutes`}
               </h1>
               <p className="mt-1.5 text-[13.5px] text-white/60">
-                Placed {order.placedAt} · {order.channel} · {pkr(order.total)}
+                Placed {order.placedAt} · {order.channel} · {money(order.total)}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -192,13 +192,13 @@ export default function OrderTracking() {
                     <span className="block truncate text-[13.5px] font-semibold text-ink">{i.name}</span>
                     <span className="block text-[12px] text-ink-muted">Qty {i.qty}</span>
                   </span>
-                  <span className="text-[13px] font-semibold tabular-nums text-ink">{pkr(i.price * i.qty)}</span>
+                  <span className="text-[13px] font-semibold tabular-nums text-ink">{money(i.price * i.qty)}</span>
                 </li>
               ))}
             </ul>
             <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4">
               <span className="text-[14px] font-semibold text-ink">Total</span>
-              <span className="font-display text-[20px] font-semibold text-ink">{pkr(order.total)}</span>
+              <span className="font-display text-[20px] font-semibold text-ink">{money(order.total)}</span>
             </div>
           </Card>
         </div>

@@ -10,7 +10,7 @@ import { AddToCartControl } from '../../components/store/DishCard'
 import { ADDRESSES, CUSTOMER_ORDERS, NOTIFICATIONS, SAVED_CARDS, WALLETS, type Address, type CustomerOrder } from '../../lib/data/store'
 import { menuBySlug } from '../../lib/data/menu'
 import { useCart, useFavourites } from '../../store/app'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 
 /* ══════════════════════════════ Profile ══════════════════════════════ */
 export function AccountProfile() {
@@ -106,8 +106,8 @@ export function AccountProfile() {
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             { l: 'Total orders', v: '29', i: 'ReceiptText' },
-            { l: 'Lifetime spend', v: pkr(63150), i: 'Wallet' },
-            { l: 'Average order', v: pkr(2177), i: 'TrendingUp' },
+            { l: 'Lifetime spend', v: money(63150), i: 'Wallet' },
+            { l: 'Average order', v: money(2177), i: 'TrendingUp' },
           ].map((s) => (
             <div key={s.l} className="rounded-xl border border-line bg-canvas p-4">
               <Icon name={s.i} size={16} className="text-ember-600" />
@@ -407,7 +407,7 @@ function OrderRow({ order }: { order: CustomerOrder }) {
           </p>
         </div>
         <div className="text-right">
-          <p className="font-display text-[16px] font-semibold text-ink">{pkr(order.total)}</p>
+          <p className="font-display text-[16px] font-semibold text-ink">{money(order.total)}</p>
           <p className="text-[11.5px] text-ink-faint">{order.payment}</p>
         </div>
       </div>
@@ -507,10 +507,10 @@ export function AccountOrderDetails() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13.5px] font-semibold text-ink">{i.name}</p>
                 <p className="text-[12px] text-ink-muted">
-                  {pkr(i.price)} × {i.qty}
+                  {money(i.price)} × {i.qty}
                 </p>
               </div>
-              <span className="text-[13.5px] font-semibold tabular-nums text-ink">{pkr(i.price * i.qty)}</span>
+              <span className="text-[13.5px] font-semibold tabular-nums text-ink">{money(i.price * i.qty)}</span>
             </div>
           ))}
         </div>
@@ -518,19 +518,19 @@ export function AccountOrderDetails() {
         <div className="mt-4 space-y-2 border-t border-line pt-4">
           <div className="flex justify-between text-[13px] text-ink-muted">
             <span>Subtotal</span>
-            <span>{pkr(Math.round((order.total - 150) / 1.05))}</span>
+            <span>{money(Math.round((order.total - 150) / 1.05))}</span>
           </div>
           <div className="flex justify-between text-[13px] text-ink-muted">
             <span>Delivery fee</span>
-            <span>{pkr(150)}</span>
+            <span>{money(150)}</span>
           </div>
           <div className="flex justify-between text-[13px] text-ink-muted">
             <span>Sales tax</span>
-            <span>{pkr(Math.round((order.total - 150) / 21))}</span>
+            <span>{money(Math.round((order.total - 150) / 21))}</span>
           </div>
           <div className="flex items-baseline justify-between pt-1">
             <span className="text-[14px] font-semibold text-ink">Total</span>
-            <span className="font-display text-[20px] font-semibold text-ink">{pkr(order.total)}</span>
+            <span className="font-display text-[20px] font-semibold text-ink">{money(order.total)}</span>
           </div>
         </div>
       </Card>
@@ -616,7 +616,7 @@ export function AccountFavourites() {
               </Link>
               <p className="text-[12.5px] text-ink-muted">{m.category}</p>
               <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-                <span className="font-display text-[15px] font-semibold text-ink">{pkr(m.price)}</span>
+                <span className="font-display text-[15px] font-semibold text-ink">{money(m.price)}</span>
                 <div className="flex items-center gap-1.5">
                   <button onClick={() => toggle(m.slug)} aria-label="Remove from favourites" className="focus-ring rounded-lg p-2 text-clay-500 transition-colors hover:bg-clay-50">
                     <Icon name="Heart" size={15} className="fill-clay-500" />

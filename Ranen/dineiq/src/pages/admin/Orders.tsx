@@ -7,7 +7,7 @@ import { PageHeader } from '../../components/admin/PageHeader'
 import { DateRangeSelect, LiveNote, StatusDot } from '../../components/shared'
 import { PageError, PageLoader, apiFetch, useAuth, useMeta } from '../../lib/api'
 import { useOrderDetail, useOrdersData, type LiveOrder, type OrderDetail } from '../../lib/live'
-import { num, pkr } from '../../lib/utils'
+import { num, money } from '../../lib/utils'
 
 const STATUS_TONE: Record<string, 'ember' | 'sage' | 'clay' | 'sky' | 'neutral' | 'gold'> = {
   Completed: 'sage',
@@ -190,7 +190,7 @@ export default function Orders() {
       header: 'Total',
       align: 'right',
       sort: (a, b) => a.total - b.total,
-      render: (o) => <span className="text-[13.5px] font-semibold tabular-nums text-ink">{pkr(o.total)}</span>,
+      render: (o) => <span className="text-[13.5px] font-semibold tabular-nums text-ink">{money(o.total)}</span>,
     },
     {
       key: 'actions',
@@ -230,7 +230,7 @@ export default function Orders() {
         {[
           { l: 'Orders in range', v: num(counts.all), d: 'Across all channels', i: 'ReceiptText', t: 'text-sky-600' },
           { l: 'Completed', v: num(counts.Completed), d: 'Fulfilled orders', i: 'CheckCircle2', t: 'text-sage-600' },
-          { l: 'Average order value', v: pkr(data.aov), d: 'Across all channels', i: 'TrendingUp', t: 'text-sage-600' },
+          { l: 'Average order value', v: money(data.aov), d: 'Across all channels', i: 'TrendingUp', t: 'text-sage-600' },
           { l: 'Cancelled', v: num(counts.Cancelled), d: 'Voided orders', i: 'XCircle', t: 'text-clay-600' },
         ].map((s) => (
           <Card key={s.l} className="flex items-center gap-3.5 p-4">
@@ -421,7 +421,7 @@ export default function Orders() {
                           </p>
                         )}
                       </div>
-                      <span className="shrink-0 text-[13px] font-semibold tabular-nums text-ink">{pkr(l.line_total)}</span>
+                      <span className="shrink-0 text-[13px] font-semibold tabular-nums text-ink">{money(l.line_total)}</span>
                     </div>
                   ))}
                 </div>
@@ -429,7 +429,7 @@ export default function Orders() {
                 <div className="mt-4 space-y-1.5 border-t border-dashed border-line pt-3">
                   <div className="flex items-baseline justify-between pt-1">
                     <span className="text-[14px] font-semibold text-ink">Total</span>
-                    <span className="font-display text-[20px] font-semibold text-ink">{pkr(detail.order.total_amount)}</span>
+                    <span className="font-display text-[20px] font-semibold text-ink">{money(detail.order.total_amount)}</span>
                   </div>
                   <p className="pt-1 text-[12px] text-ink-muted">
                     {detail.order.promotion_id ? `Promo ${detail.order.promotion_id}` : 'No promo'} · {detail.order.status}

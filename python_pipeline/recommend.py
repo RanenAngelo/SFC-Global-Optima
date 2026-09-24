@@ -48,7 +48,7 @@ def run(proc: Path) -> dict:
     for _, r in hidden.iterrows():
         add("menu_promotion", f"Promote {r['item_name']} ({r['item_id']})", r["item_id"],
             "Feature on menu top-section and app banners; trial 10% visibility push.",
-            [f"contribution margin Rs.{r['contribution_margin']:.0f}",
+            [f"contribution margin ${r['contribution_margin']:.0f}",
              f"rating {r['avg_rating']}", f"repeat {r['repeat_purchase_rate']:.0%}",
              f"only {r['units_sold']:.0f} units sold (low visibility)"],
             "classify_menu", "High", r["contribution_margin"])
@@ -57,7 +57,7 @@ def run(proc: Path) -> dict:
     for _, r in wr.sort_values("wastage_cost", ascending=False).head(5).iterrows():
         add("wastage_reduction", f"Cut preparation of {r['item_name']} ({r['item_id']})",
             r["item_id"], "Reduce batch prep 20% and shift to cook-to-order at off-peak.",
-            [f"wastage cost Rs.{r['wastage_cost']:.0f}", f"{r['wasted_qty']:.0f} units wasted",
+            [f"wastage cost ${r['wastage_cost']:.0f}", f"{r['wasted_qty']:.0f} units wasted",
              f"{r['incidents']} incidents"], "wastage",
             "Critical" if r["wastage_cost"] > 10000 else "High", r["wastage_cost"])
 
@@ -83,7 +83,7 @@ def run(proc: Path) -> dict:
         add("menu_removal", f"Remove or redesign {r['item_name']} ({r['item_id']})",
             r["item_id"], "Delist after 2-week sell-through or re-engineer recipe/cost.",
             [f"class Low Performer", f"slow-moving ({int(r['order_frequency'])} orders)",
-             f"trend down {r['sales_trend_pct']}%", f"margin Rs.{r['contribution_margin']:.0f}"],
+             f"trend down {r['sales_trend_pct']}%", f"margin ${r['contribution_margin']:.0f}"],
             "classify_menu+slow_movers", "High", abs(min(r["contribution_margin"], 0)))
 
     # 6) stock before peaks ------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ def run(proc: Path) -> dict:
             f"Win back {len(hv_risk)} at-risk high-value customers", "segment:High-Value Loyal",
             "Personal outreach + tailored offer within 7 days.",
             [f"{len(hv_risk)} HV customers high/critical churn risk",
-             f"Rs.{hv_risk['monetary'].sum():.0f} historical spend at stake"],
+             f"${hv_risk['monetary'].sum():.0f} historical spend at stake"],
             "churn", "Critical", float(hv_risk["monetary"].sum()))
 
     # 8) review ineffective promos -----------------------------------------------------------------------------

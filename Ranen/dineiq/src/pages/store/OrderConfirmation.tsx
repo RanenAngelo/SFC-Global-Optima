@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Icon, cn } from '../../components/ui/primitives'
 import { FoodImage } from '../../components/shared'
 import { CUSTOMER_ORDERS } from '../../lib/data/store'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 
 export default function OrderConfirmation() {
   const { number = 'ME-24816' } = useParams()
@@ -90,26 +90,26 @@ export default function OrderConfirmation() {
                   <span className="block truncate text-[13.5px] font-semibold text-ink">{i.name}</span>
                   <span className="block text-[12px] text-ink-muted">Qty {i.qty}</span>
                 </span>
-                <span className="text-[13px] font-semibold tabular-nums text-ink">{pkr(i.price * i.qty)}</span>
+                <span className="text-[13px] font-semibold tabular-nums text-ink">{money(i.price * i.qty)}</span>
               </li>
             ))}
           </ul>
           <div className="mt-4 space-y-2 border-t border-line pt-4">
             <div className="flex justify-between text-[13.5px] text-ink-muted">
               <span>Subtotal</span>
-              <span className="tabular-nums">{pkr(Math.round(total / 1.05) - 150)}</span>
+              <span className="tabular-nums">{money(Math.round(total / 1.05) - 150)}</span>
             </div>
             <div className="flex justify-between text-[13.5px] text-ink-muted">
               <span>Delivery fee</span>
-              <span className="tabular-nums">{pkr(150)}</span>
+              <span className="tabular-nums">{money(150)}</span>
             </div>
             <div className="flex justify-between text-[13.5px] text-ink-muted">
               <span>Sales tax (5%)</span>
-              <span className="tabular-nums">{pkr(Math.round((total - 150) / 21))}</span>
+              <span className="tabular-nums">{money(Math.round((total - 150) / 21))}</span>
             </div>
             <div className="flex items-baseline justify-between pt-1.5">
               <span className="text-[15px] font-semibold text-ink">Total paid</span>
-              <span className="font-display text-[22px] font-semibold text-ink">{pkr(total)}</span>
+              <span className="font-display text-[22px] font-semibold text-ink">{money(total)}</span>
             </div>
           </div>
         </div>

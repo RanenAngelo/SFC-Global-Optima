@@ -6,7 +6,7 @@ import { PageHeader } from '../../components/admin/PageHeader'
 import { ChartCard } from '../../components/charts'
 import { DemoNote, FoodImage, KpiCard, MetricRow, Progress } from '../../components/shared'
 import { BASKET_PAIRS, BUNDLES, CATEGORY_PAIRING } from '../../lib/data/analytics'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 
 const OPPORTUNITY_TONE: Record<string, 'sage' | 'gold' | 'sky'> = { High: 'sage', Medium: 'gold', Low: 'sky' }
 
@@ -268,8 +268,8 @@ export default function MarketBasket() {
                     ))}
                   </ul>
                   <div className="mt-3 flex items-center gap-2">
-                    <span className="font-display text-[17px] font-semibold text-ink">{pkr(b.price)}</span>
-                    <span className="text-[12px] text-ink-faint line-through">{pkr(b.was)}</span>
+                    <span className="font-display text-[17px] font-semibold text-ink">{money(b.price)}</span>
+                    <span className="text-[12px] text-ink-faint line-through">{money(b.was)}</span>
                   </div>
                   <Button
                     size="xs"

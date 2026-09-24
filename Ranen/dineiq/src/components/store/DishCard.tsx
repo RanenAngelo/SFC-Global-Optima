@@ -6,7 +6,7 @@ import { useCart } from '../../store/app'
 import { useFavourites } from '../../store/app'
 import { useToast } from '../ui/overlay'
 import { MenuItem } from '../../lib/data/menu'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 
 export function QtyStepper({
   qty,
@@ -81,7 +81,7 @@ export function AddToCartControl({ item, compact }: { item: MenuItem; compact?: 
       onClick={() => {
         add(item)
         setFlash(true)
-        push({ title: `${item.name} added to cart`, body: `${pkr(item.price)} · ${item.prep} prep`, tone: 'success' })
+        push({ title: `${item.name} added to cart`, body: `${money(item.price)} · ${item.prep} prep`, tone: 'success' })
       }}
       className={cn(
         'focus-ring inline-flex items-center justify-center gap-2 rounded-xl bg-ember-600 font-semibold text-white shadow-sm transition-all hover:bg-ember-700 active:scale-[.97]',
@@ -125,7 +125,7 @@ export function DishCard({ item, layout = 'grid' }: { item: MenuItem; layout?: '
             <SpiceLevel level={item.spice} />
           </div>
           <div className="mt-auto flex items-end justify-between gap-3 pt-2.5">
-            <span className="font-display text-[16px] font-semibold text-ink">{pkr(item.price)}</span>
+            <span className="font-display text-[16px] font-semibold text-ink">{money(item.price)}</span>
             <AddToCartControl item={item} />
           </div>
         </div>
@@ -180,7 +180,7 @@ export function DishCard({ item, layout = 'grid' }: { item: MenuItem; layout?: '
           {item.kcal} kcal
         </div>
         <div className="mt-3 flex items-center justify-between gap-2 pt-0.5">
-          <span className="font-display text-[17px] font-semibold text-ink">{pkr(item.price)}</span>
+          <span className="font-display text-[17px] font-semibold text-ink">{money(item.price)}</span>
           <AddToCartControl item={item} />
         </div>
       </div>

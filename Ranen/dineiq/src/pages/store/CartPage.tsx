@@ -7,7 +7,7 @@ import { ConfirmDialog, useToast } from '../../components/ui/overlay'
 import { EmptyState } from '../../components/ui/states'
 import { useCart } from '../../store/app'
 import { MENU, menuBySlug } from '../../lib/data/menu'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 
 const SUGGESTED = ['truffle-parmesan-fries', 'chicken-dum-biryani', 'molten-lava-cake', 'mango-lassi']
   .map((s) => menuBySlug(s))
@@ -102,7 +102,7 @@ export default function CartPage() {
             <div className="rounded-2xl border border-line bg-white p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[13px] text-ink-soft">
-                  Add <span className="font-semibold text-ink">{pkr(remaining)}</span> more for free delivery
+                  Add <span className="font-semibold text-ink">{money(remaining)}</span> more for free delivery
                 </p>
                 <Link to="/menu" className="text-[13px] font-semibold text-ember-700 hover:underline">
                   Add dishes
@@ -144,15 +144,15 @@ export default function CartPage() {
                                     <Icon name="Plus" size={11} className="text-ink-faint" />
                                     {a.name}
                                   </span>
-                                  <span className="tabular-nums">{a.price === 0 ? 'Free' : pkr(a.price)}</span>
+                                  <span className="tabular-nums">{a.price === 0 ? 'Free' : money(a.price)}</span>
                                 </li>
                               ))}
                             </ul>
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="font-display text-[16px] font-semibold text-ink">{pkr(unit * l.qty)}</p>
-                          <p className="text-[11.5px] text-ink-faint">{pkr(unit)} each</p>
+                          <p className="font-display text-[16px] font-semibold text-ink">{money(unit * l.qty)}</p>
+                          <p className="text-[11.5px] text-ink-faint">{money(unit)} each</p>
                         </div>
                       </div>
 
@@ -247,7 +247,7 @@ export default function CartPage() {
                   <FoodImage src={s.img} name={s.name} className="h-14 w-14 shrink-0" ratio="fill" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13.5px] font-semibold text-ink">{s.name}</p>
-                    <p className="text-[12.5px] text-ink-muted">{pkr(s.price)}</p>
+                    <p className="text-[12.5px] text-ink-muted">{money(s.price)}</p>
                   </div>
                   <Button
                     size="xs"
@@ -326,17 +326,17 @@ export default function CartPage() {
             </div>
 
             <div className="space-y-2.5 p-5">
-              <Row label="Subtotal" value={pkr(totals.subtotal)} />
-              {totals.discount > 0 && <Row label={`Discount (${cart.promo})`} value={`− ${pkr(totals.discount)}`} tone="text-sage-600" />}
+              <Row label="Subtotal" value={money(totals.subtotal)} />
+              {totals.discount > 0 && <Row label={`Discount (${cart.promo})`} value={`− ${money(totals.discount)}`} tone="text-sage-600" />}
               <Row
                 label={cart.fulfilment === 'delivery' ? 'Delivery fee' : 'Pickup'}
-                value={cart.fulfilment === 'delivery' ? pkr(totals.delivery) : 'Free'}
+                value={cart.fulfilment === 'delivery' ? money(totals.delivery) : 'Free'}
               />
-              <Row label="Sales tax (5%)" value={pkr(totals.tax)} />
+              <Row label="Sales tax (5%)" value={money(totals.tax)} />
               <div className="h-px bg-line" />
               <div className="flex items-baseline justify-between gap-3 pt-1">
                 <span className="text-[14px] font-semibold text-ink">Grand total</span>
-                <span className="font-display text-[24px] font-semibold text-ink">{pkr(totals.total)}</span>
+                <span className="font-display text-[24px] font-semibold text-ink">{money(totals.total)}</span>
               </div>
             </div>
 
@@ -393,7 +393,7 @@ function SavedCard({ line }: { line: import('../../store/app').CartLine }) {
       <FoodImage src={line.img} name={line.name} className="h-14 w-14 shrink-0" ratio="fill" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13.5px] font-semibold text-ink">{line.name}</p>
-        <p className="text-[12.5px] text-ink-muted">{pkr(line.price)}</p>
+        <p className="text-[12.5px] text-ink-muted">{money(line.price)}</p>
       </div>
       <Button
         size="xs"

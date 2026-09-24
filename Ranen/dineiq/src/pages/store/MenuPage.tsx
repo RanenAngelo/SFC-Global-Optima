@@ -6,7 +6,7 @@ import {
 import { FoodImage } from '../../components/shared'
 import { DishCard, DishCardSkeleton } from '../../components/store/DishCard'
 import { CATEGORIES, MENU, MenuItem } from '../../lib/data/menu'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 import { EmptyState } from '../../components/ui/states'
 
 type SortKey = 'popularity' | 'price-asc' | 'price-desc' | 'rating' | 'prep'

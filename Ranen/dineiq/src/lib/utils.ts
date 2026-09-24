@@ -6,6 +6,20 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /** Pakistani Rupee formatting — presentation only. */
+export function money(value: number, opts: { decimals?: boolean; compact?: boolean } = {}) {
+  const { decimals = false, compact = false } = opts
+  if (compact) {
+    if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`
+    if (Math.abs(value) >= 1_000) return `$${(value / 1_000).toFixed(1)}K`
+    return `$${decimals ? value.toFixed(2) : value}`
+  }
+  return `$${value.toLocaleString('en-US', {
+    minimumFractionDigits: decimals ? 2 : 0,
+    maximumFractionDigits: decimals ? 2 : 0,
+  })}`
+}
+
+/** @deprecated dataset currency is USD — use money(). Kept for unmigrated views. */
 export function pkr(value: number, opts: { decimals?: boolean; compact?: boolean } = {}) {
   const { decimals = false, compact = false } = opts
   if (compact) {

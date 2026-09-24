@@ -214,19 +214,85 @@ def menu_items(user=Depends(deps.get_current_user)):
 
 
 @router.patch("/menu/items/{item_id}")
-def set_availability(item_id: str, body: schemas.MenuAvailability,
-                     user=Depends(deps.require_role("manager"))):
+def update_item(item_id: str, body: schemas.MenuItemUpdate,
+                user=Depends(deps.require_role("manager"))):
+    sets, params = [], {"i": item_id}
+    if body.is_active is not None:
+        sets.append("is_active = :a")
+        params["a"] = int(body.is_active)
+    if body.item_name is not None:
+        if len(body.item_name.strip()) < 2:
+            raise HTTPException(400, "Item name too short")
+        sets.append("item_name = :n")
+        params["n"] = body.item_name.strip()
+    if body.category_id is not None:
+        sets.append("category_id = :c")
+        params["c"] = body.category_id
+    if body.base_cost is not None:
+        sets.append("base_cost = :v")
+        params["v"] = body.base_cost
+    if not sets:
+        raise HTTPException(400, "Nothing to update")
     s = dbmod.get_session()
     try:
-        r = s.execute(text("UPDATE menu_items SET is_active = :a WHERE item_id = :i"),
-                      {"a": int(body.is_active), "i": item_id})
+        if body.category_id is not None:
+            ok = s.execute(text("SELECT category_id FROM menu_categories WHERE category_id = :c"),
+                           {"c": body.category_id}).first()
+            if not ok:
+                raise HTTPException(400, "Unknown category")
+        r = s.execute(text(f"UPDATE menu_items SET {', '.join(sets)} WHERE item_id = :i"), params)
         s.commit()
         if not r.rowcount:
             raise HTTPException(404, "Item not found")
     finally:
         s.close()
-    deps.audit(user["username"], "menu_availability", f"{item_id}={body.is_active}")
-    return {"item_id": item_id, "is_active": body.is_active}
+    deps.audit(user["username"], "menu_update", f"{item_id} {','.join(sets)}")
+    return {"item_id": item_id, "updated": sets}
+
+
+@router.post("/menu/items")
+def create_item(body: schemas.MenuItemCreate,
+                user=Depends(deps.require_role("manager"))):
+    s = dbmod.get_session()
+    try:
+        ok = s.execute(text("SELECT category_id FROM menu_categories WHERE category_id = :c"),
+                       {"c": body.category_id}).first()
+        if not ok:
+            raise HTTPException(400, "Unknown category")
+        mx = s.execute(text("SELECT MAX(CAST(SUBSTR(item_id, 2) AS INTEGER)) FROM menu_items")).scalar() or 0
+        nid = f"M{mx + 1:04d}"
+        today = datetime.now().strftime("%Y-%m-%d")
+        s.execute(text("INSERT INTO menu_items (item_id, item_name, category_id, base_cost, base_price,"
+                       " is_active, introduced_date, demand_tier, wastage_tag, price_sensitivity_tag,"
+                       " seasonal_tag, promo_dependent_tag) VALUES (:i, :n, :c, :co, :p, :a, :d,"
+                       " 'Medium', 'Normal', 'Medium', 0, 0)"),
+                  {"i": nid, "n": body.item_name.strip(), "c": body.category_id,
+                   "co": body.base_cost, "p": body.base_price, "a": int(body.is_active), "d": today})
+        s.commit()
+    finally:
+        s.close()
+    deps.audit(user["username"], "menu_create", nid)
+    return {"item_id": nid, "item_name": body.item_name.strip()}
+
+
+@router.delete("/menu/items/{item_id}")
+def delete_item(item_id: str, user=Depends(deps.require_role("manager"))):
+    n_ord = deps.q("SELECT COUNT(*) n FROM order_items WHERE item_id = :i", {"i": item_id})[0]["n"]
+    if n_ord:
+        raise HTTPException(400, f"Item has {n_ord} order lines — deactivate it instead of deleting.")
+    n_rat = deps.q("SELECT COUNT(*) n FROM ratings WHERE item_id = :i", {"i": item_id})[0]["n"]
+    if n_rat:
+        raise HTTPException(400, f"Item has {n_rat} ratings — deactivate it instead of deleting.")
+    s = dbmod.get_session()
+    try:
+        r = s.execute(text("DELETE FROM menu_items WHERE item_id = :i"), {"i": item_id})
+        s.commit()
+        if not r.rowcount:
+            raise HTTPException(404, "Item not found")
+    finally:
+        s.close()
+    deps.audit(user["username"], "menu_delete", item_id)
+    return {"item_id": item_id, "deleted": True}
 
 
 @router.post("/menu/items/{item_id}/price")

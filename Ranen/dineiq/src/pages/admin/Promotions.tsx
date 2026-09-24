@@ -9,7 +9,7 @@ import { BarSeries, ChartCard, TrendChart } from '../../components/charts'
 import { DemoNote, KpiCard, MetricRow, Progress } from '../../components/shared'
 import { PROMOTION_COMPARISON, PROMOTIONS, PROMOTION_TRAPS, type Promotion } from '../../lib/data/analytics'
 import { MENU } from '../../lib/data/menu'
-import { pkr, num } from '../../lib/utils'
+import { money, num } from '../../lib/utils'
 
 const STATUS_TONE: Record<string, 'sage' | 'sky' | 'neutral'> = { Active: 'sage', Scheduled: 'sky', Expired: 'neutral' }
 
@@ -79,7 +79,7 @@ export default function Promotions() {
       header: 'Revenue',
       align: 'right',
       sort: (a, b) => a.revenue - b.revenue,
-      render: (p) => <span className="font-semibold tabular-nums text-ink">{p.revenue ? pkr(p.revenue, { compact: true }) : '—'}</span>,
+      render: (p) => <span className="font-semibold tabular-nums text-ink">{p.revenue ? money(p.revenue, { compact: true }) : '—'}</span>,
     },
     {
       key: 'aov',
@@ -87,7 +87,7 @@ export default function Promotions() {
       align: 'right',
       hideBelow: 'md',
       sort: (a, b) => a.aov - b.aov,
-      render: (p) => <span className="tabular-nums text-ink-soft">{p.aov ? pkr(p.aov) : '—'}</span>,
+      render: (p) => <span className="tabular-nums text-ink-soft">{p.aov ? money(p.aov) : '—'}</span>,
     },
     {
       key: 'margin',
@@ -243,7 +243,7 @@ export default function Promotions() {
               { key: 'revenue', label: 'Revenue', color: '#B54E17', type: 'bar' },
               { key: 'orders', label: 'Orders', color: '#2F6FA8', type: 'line' },
             ]}
-            valueFormat={(v, n) => (n === 'Revenue' ? pkr(v, { compact: true }) : `${num(v)} orders`)}
+            valueFormat={(v, n) => (n === 'Revenue' ? money(v, { compact: true }) : `${num(v)} orders`)}
           />
         </ChartCard>
 
@@ -360,9 +360,9 @@ export default function Promotions() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 { l: 'Redemptions', v: num(active.redemptions) },
-                { l: 'Revenue', v: active.revenue ? pkr(active.revenue, { compact: true }) : '—' },
+                { l: 'Revenue', v: active.revenue ? money(active.revenue, { compact: true }) : '—' },
                 { l: 'Orders', v: num(active.orders) },
-                { l: 'Avg order value', v: active.aov ? pkr(active.aov) : '—' },
+                { l: 'Avg order value', v: active.aov ? money(active.aov) : '—' },
               ].map((s) => (
                 <div key={s.l} className="rounded-xl border border-line bg-white p-3.5">
                   <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">{s.l}</p>
@@ -389,8 +389,8 @@ export default function Promotions() {
                 <div className="mt-3 space-y-3">
                   <div>
                     <div className="flex justify-between text-[12px] text-ink-muted">
-                      <span>Baseline revenue {pkr(active.baselineRevenue, { compact: true })}</span>
-                      <span>Promotion revenue {pkr(active.revenue, { compact: true })}</span>
+                      <span>Baseline revenue {money(active.baselineRevenue, { compact: true })}</span>
+                      <span>Promotion revenue {money(active.revenue, { compact: true })}</span>
                     </div>
                     <div className="mt-1.5 flex gap-1.5">
                       <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">

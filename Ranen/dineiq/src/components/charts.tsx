@@ -5,7 +5,7 @@ import {
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from 'recharts'
 import { Card, CardHeader } from './ui/primitives'
-import { cn, pkr } from '../lib/utils'
+import { cn, money } from '../lib/utils'
 
 export const CHART_COLORS = ['#B54E17', '#5E8C4A', '#C08A16', '#2F6FA8', '#96352C', '#8B6F4E', '#6B7280', '#B45309']
 
@@ -444,5 +444,5 @@ export function ChartLegend({ items, className }: { items: { label: string; colo
   )
 }
 
-export const defaultCurrencyFormat = (v: number) => pkr(v, { compact: true })
+export const defaultCurrencyFormat = (v: number) => money(v, { compact: true })
 export { ReferenceLine, Cell }

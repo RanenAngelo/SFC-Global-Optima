@@ -12,7 +12,7 @@ import {
   CLASSIFICATIONS, CATEGORY_REVENUE, DEMO_NOTE, MARGIN_DISTRIBUTION, MENU_DETAIL_TABS, MENU_INTEL,
   MENU_PERFORMANCE_DIST, SCATTER_DATA, type ClassificationKey, type MenuIntelRow,
 } from '../../lib/data/analytics'
-import { pkr, num } from '../../lib/utils'
+import { money, num } from '../../lib/utils'
 
 const ORDER: ClassificationKey[] = ['profit-driver', 'volume-driver', 'hidden-opportunity', 'low-performer']
 
@@ -59,7 +59,7 @@ export default function MenuIntelligence() {
       header: 'Revenue',
       align: 'right',
       sort: (a, b) => a.revenue - b.revenue,
-      render: (r) => <span className="font-semibold tabular-nums text-ink">{pkr(r.revenue, { compact: true })}</span>,
+      render: (r) => <span className="font-semibold tabular-nums text-ink">{money(r.revenue, { compact: true })}</span>,
     },
     {
       key: 'cost',
@@ -67,7 +67,7 @@ export default function MenuIntelligence() {
       align: 'right',
       hideBelow: 'lg',
       sort: (a, b) => a.cost - b.cost,
-      render: (r) => <span className="tabular-nums text-ink-muted">{pkr(r.cost, { compact: true })}</span>,
+      render: (r) => <span className="tabular-nums text-ink-muted">{money(r.cost, { compact: true })}</span>,
     },
     {
       key: 'cm',
@@ -75,7 +75,7 @@ export default function MenuIntelligence() {
       align: 'right',
       hideBelow: 'md',
       sort: (a, b) => a.cm - b.cm,
-      render: (r) => <span className="tabular-nums text-ink-soft">{pkr(r.cm, { compact: true })}</span>,
+      render: (r) => <span className="tabular-nums text-ink-soft">{money(r.cm, { compact: true })}</span>,
     },
     {
       key: 'profitPct',
@@ -282,7 +282,7 @@ export default function MenuIntelligence() {
                   { key: 'revenue', label: 'Revenue', color: '#B54E17', type: 'bar' },
                   { key: 'margin', label: 'Margin %', color: '#5E8C4A', type: 'line' },
                 ]}
-                valueFormat={(v, n) => (n === 'Revenue' ? pkr(v, { compact: true }) : `${v}%`)}
+                valueFormat={(v, n) => (n === 'Revenue' ? money(v, { compact: true }) : `${v}%`)}
               />
             </ChartCard>
 
@@ -468,7 +468,7 @@ export default function MenuIntelligence() {
                 <div className="grid grid-cols-3 divide-x divide-line border-b border-line">
                   {[
                     { l: 'Units sold', v: num(units) },
-                    { l: 'Revenue', v: pkr(revenue, { compact: true }) },
+                    { l: 'Revenue', v: money(revenue, { compact: true }) },
                     { l: 'Avg rating', v: (items.reduce((s, r) => s + r.rating, 0) / items.length).toFixed(2) },
                   ].map((s) => (
                     <div key={s.l} className="px-4 py-3">
@@ -512,7 +512,7 @@ export default function MenuIntelligence() {
         onClose={() => setActive(null)}
         width="xl"
         title={active?.name ?? ''}
-        subtitle={active ? `${active.category} · ${pkr(active.revenue, { compact: true })} demo revenue · ${num(active.units)} units` : ''}
+        subtitle={active ? `${active.category} · ${money(active.revenue, { compact: true })} demo revenue · ${num(active.units)} units` : ''}
         badge={
           active ? (
             <span
@@ -540,8 +540,8 @@ export default function MenuIntelligence() {
                   <div className="grid gap-3 sm:grid-cols-4">
                     {[
                       { l: 'Units sold', v: num(active.units) },
-                      { l: 'Revenue', v: pkr(active.revenue, { compact: true }) },
-                      { l: 'Contribution', v: pkr(active.cm, { compact: true }) },
+                      { l: 'Revenue', v: money(active.revenue, { compact: true }) },
+                      { l: 'Contribution', v: money(active.cm, { compact: true }) },
                       { l: 'Profit %', v: `${active.profitPct.toFixed(1)}%` },
                     ].map((s) => (
                       <div key={s.l} className="rounded-xl border border-line bg-white p-3.5">
@@ -570,7 +570,7 @@ export default function MenuIntelligence() {
                   <Card className="p-4">
                     <p className="text-[13px] font-semibold text-ink">Key metrics</p>
                     <div className="mt-1 divide-y divide-line">
-                      <MetricRow label="Estimated cost" value={pkr(active.cost, { compact: true })} />
+                      <MetricRow label="Estimated cost" value={money(active.cost, { compact: true })} />
                       <MetricRow label="Average rating" value={`${active.rating} / 5`} />
                       <MetricRow label="Repeat purchase rate" value={`${active.repeat}%`} />
                       <MetricRow label="Wastage" value={`${active.wastage.toFixed(1)}%`} tone={active.wastage > 8 ? 'text-clay-600' : undefined} />
@@ -595,7 +595,7 @@ export default function MenuIntelligence() {
                   </Card>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <KpiCard label="Units sold" value={num(active.units)} compare="demo period" icon="Package" tone="ember" />
-                    <KpiCard label="Revenue" value={pkr(active.revenue, { compact: true })} compare="demo period" icon="Wallet" tone="sky" />
+                    <KpiCard label="Revenue" value={money(active.revenue, { compact: true })} compare="demo period" icon="Wallet" tone="sky" />
                     <KpiCard label="Avg units / day" value={num(Math.round(active.units / 30))} compare="demo period" icon="CalendarDays" tone="gold" />
                   </div>
                 </div>
@@ -604,9 +604,9 @@ export default function MenuIntelligence() {
               {detailTab === 'Profitability' && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <KpiCard label="Revenue" value={pkr(active.revenue, { compact: true })} compare="demo" icon="Wallet" tone="ember" />
-                    <KpiCard label="Estimated cost" value={pkr(active.cost, { compact: true })} compare="demo" icon="Coins" tone="clay" />
-                    <KpiCard label="Contribution" value={pkr(active.cm, { compact: true })} compare="demo" icon="TrendingUp" tone="sage" />
+                    <KpiCard label="Revenue" value={money(active.revenue, { compact: true })} compare="demo" icon="Wallet" tone="ember" />
+                    <KpiCard label="Estimated cost" value={money(active.cost, { compact: true })} compare="demo" icon="Coins" tone="clay" />
+                    <KpiCard label="Contribution" value={money(active.cm, { compact: true })} compare="demo" icon="TrendingUp" tone="sage" />
                   </div>
                   <Card className="p-4">
                     <p className="text-[13px] font-semibold text-ink">Cost versus contribution — demo split</p>
@@ -686,7 +686,7 @@ export default function MenuIntelligence() {
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-3">
                     <KpiCard label="Wastage" value={`${active.wastage.toFixed(1)}%`} compare="demo" icon="Trash2" tone="clay" />
-                    <KpiCard label="Estimated waste cost" value={pkr(Math.round(active.cost * (active.wastage / 100)), { compact: true })} compare="demo" icon="Coins" tone="clay" />
+                    <KpiCard label="Estimated waste cost" value={money(Math.round(active.cost * (active.wastage / 100)), { compact: true })} compare="demo" icon="Coins" tone="clay" />
                     <KpiCard label="Units not sold" value={num(Math.round(active.units * (active.wastage / 100)))} compare="demo" icon="PackageMinus" tone="gold" />
                   </div>
                   <Card className="p-4">
@@ -710,8 +710,8 @@ export default function MenuIntelligence() {
               {detailTab === 'Pricing' && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <KpiCard label="Current price" value={pkr(Math.round(active.revenue / active.units))} compare="demo" icon="Tags" tone="ember" />
-                    <KpiCard label="Cost per unit" value={pkr(Math.round(active.cost / active.units))} compare="demo" icon="Coins" tone="clay" />
+                    <KpiCard label="Current price" value={money(Math.round(active.revenue / active.units))} compare="demo" icon="Tags" tone="ember" />
+                    <KpiCard label="Cost per unit" value={money(Math.round(active.cost / active.units))} compare="demo" icon="Coins" tone="clay" />
                     <KpiCard label="Margin" value={`${active.profitPct.toFixed(1)}%`} compare="demo" icon="Percent" tone="sage" />
                   </div>
                   <Card className="p-4">
@@ -728,7 +728,7 @@ export default function MenuIntelligence() {
                         ]}
                         xKey="m"
                         lines={[{ key: 'p', label: 'Price', color: '#B54E17' }]}
-                        valueFormat={(v) => pkr(v)}
+                        valueFormat={(v) => money(v)}
                         showLegend={false}
                       />
                     </div>
@@ -777,7 +777,7 @@ export default function MenuIntelligence() {
                         <div key={x.l} className="flex items-center justify-between gap-3 px-4 py-3">
                           <span className="text-[13px] font-medium text-ink">{x.l}</span>
                           <span className="text-[12.5px] text-ink-muted">{num(x.u)} units</span>
-                          <span className="w-24 text-right text-[13px] font-semibold tabular-nums text-ink">{pkr(x.r, { compact: true })}</span>
+                          <span className="w-24 text-right text-[13px] font-semibold tabular-nums text-ink">{money(x.r, { compact: true })}</span>
                         </div>
                       ))}
                     </div>

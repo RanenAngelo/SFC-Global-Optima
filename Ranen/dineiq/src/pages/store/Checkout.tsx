@@ -6,7 +6,7 @@ import {
 import { FoodImage } from '../../components/shared'
 import { useCart } from '../../store/app'
 import { ADDRESSES, SAVED_CARDS, WALLETS } from '../../lib/data/store'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 import { ConfirmDialog, useToast } from '../../components/ui/overlay'
 
 const STEPS = [
@@ -315,7 +315,7 @@ export default function Checkout() {
                     </span>
                     <span className="mt-1 block text-[12.5px] text-ink-muted">Pay the rider in cash. Please keep change ready.</span>
                   </span>
-                  <span className="text-[12.5px] font-semibold text-ink">{pkr(grandTotal)}</span>
+                  <span className="text-[12.5px] font-semibold text-ink">{money(grandTotal)}</span>
                 </label>
 
                 {/* Card */}
@@ -480,7 +480,7 @@ export default function Checkout() {
                         </p>
                       </div>
                       <span className="text-[13px] font-semibold tabular-nums text-ink">
-                        {pkr((l.price + l.addons.reduce((s, a) => s + a.price, 0)) * l.qty)}
+                        {money((l.price + l.addons.reduce((s, a) => s + a.price, 0)) * l.qty)}
                       </span>
                     </div>
                   ))}
@@ -515,7 +515,7 @@ export default function Checkout() {
                           form.tip === t ? 'border-ember-600 bg-ember-50 text-ember-700' : 'border-line-strong text-ink-soft hover:border-ink-faint',
                         )}
                       >
-                        {t === 0 ? 'No tip' : pkr(t)}
+                        {t === 0 ? 'No tip' : money(t)}
                       </button>
                     ))}
                   </div>
@@ -527,7 +527,7 @@ export default function Checkout() {
                 </div>
               </div>
             ) : (
-              <SummaryRow value={`${cart.lines.length} items · ${pkr(grandTotal)}`} onEdit={() => setStep(5)} />
+              <SummaryRow value={`${cart.lines.length} items · ${money(grandTotal)}`} onEdit={() => setStep(5)} />
             )}
           </Card>
 
@@ -550,7 +550,7 @@ export default function Checkout() {
               </Button>
             ) : (
               <Button size="lg" icon="Check" onClick={placeOrder}>
-                Place order · {pkr(grandTotal)}
+                Place order · {money(grandTotal)}
               </Button>
             )}
           </div>
@@ -562,18 +562,18 @@ export default function Checkout() {
             <div className="border-b border-line p-5">
               <h2 className="font-display text-[17px] font-semibold text-ink">Payment summary</h2>
               <div className="mt-3 space-y-2.5">
-                <SummaryRowSmall label="Subtotal" value={pkr(cart.totals.subtotal)} />
-                {cart.totals.discount > 0 && <SummaryRowSmall label={`Discount (${cart.promo})`} value={`− ${pkr(cart.totals.discount)}`} tone="text-sage-600" />}
+                <SummaryRowSmall label="Subtotal" value={money(cart.totals.subtotal)} />
+                {cart.totals.discount > 0 && <SummaryRowSmall label={`Discount (${cart.promo})`} value={`− ${money(cart.totals.discount)}`} tone="text-sage-600" />}
                 <SummaryRowSmall
                   label={cart.fulfilment === 'delivery' ? 'Delivery fee' : 'Pickup'}
-                  value={cart.fulfilment === 'delivery' ? pkr(cart.totals.delivery) : 'Free'}
+                  value={cart.fulfilment === 'delivery' ? money(cart.totals.delivery) : 'Free'}
                 />
-                <SummaryRowSmall label="Sales tax (5%)" value={pkr(cart.totals.tax)} />
-                {form.tip > 0 && <SummaryRowSmall label="Tip" value={pkr(form.tip)} />}
+                <SummaryRowSmall label="Sales tax (5%)" value={money(cart.totals.tax)} />
+                {form.tip > 0 && <SummaryRowSmall label="Tip" value={money(form.tip)} />}
                 <div className="h-px bg-line" />
                 <div className="flex items-baseline justify-between pt-0.5">
                   <span className="text-[14px] font-semibold text-ink">Total</span>
-                  <span className="font-display text-[24px] font-semibold text-ink">{pkr(grandTotal)}</span>
+                  <span className="font-display text-[24px] font-semibold text-ink">{money(grandTotal)}</span>
                 </div>
               </div>
             </div>
@@ -588,7 +588,7 @@ export default function Checkout() {
                       <span className="block text-[11.5px] text-ink-muted">Qty {l.qty}</span>
                     </span>
                     <span className="text-[12.5px] font-semibold tabular-nums text-ink">
-                      {pkr((l.price + l.addons.reduce((s, a) => s + a.price, 0)) * l.qty)}
+                      {money((l.price + l.addons.reduce((s, a) => s + a.price, 0)) * l.qty)}
                     </span>
                   </li>
                 ))}

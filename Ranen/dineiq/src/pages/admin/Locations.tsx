@@ -6,7 +6,7 @@ import { PageHeader } from '../../components/admin/PageHeader'
 import { BarSeries, ChartCard, DonutChart, TrendChart } from '../../components/charts'
 import { DemoNote, FoodImage, KpiCard, MetricRow, Progress, Stars } from '../../components/shared'
 import { CLASSIFICATIONS, LOCATIONS, LOCATION_MENU_CLASS, LOCATION_TREND, MENU_INTEL } from '../../lib/data/analytics'
-import { pkr, num } from '../../lib/utils'
+import { money, num } from '../../lib/utils'
 
 export default function Locations() {
   const columns: Column<(typeof LOCATIONS)[number]>[] = [
@@ -21,9 +21,9 @@ export default function Locations() {
         </div>
       ),
     },
-    { key: 'revenue', header: 'Revenue', align: 'right', sort: (a, b) => a.revenue - b.revenue, render: (l) => <span className="font-semibold tabular-nums text-ink">{pkr(l.revenue, { compact: true })}</span> },
+    { key: 'revenue', header: 'Revenue', align: 'right', sort: (a, b) => a.revenue - b.revenue, render: (l) => <span className="font-semibold tabular-nums text-ink">{money(l.revenue, { compact: true })}</span> },
     { key: 'orders', header: 'Orders', align: 'right', sort: (a, b) => a.orders - b.orders, render: (l) => <span className="tabular-nums text-ink-soft">{num(l.orders)}</span> },
-    { key: 'aov', header: 'Avg order value', align: 'right', hideBelow: 'md', sort: (a, b) => a.aov - b.aov, render: (l) => <span className="tabular-nums text-ink-soft">{pkr(l.aov)}</span> },
+    { key: 'aov', header: 'Avg order value', align: 'right', hideBelow: 'md', sort: (a, b) => a.aov - b.aov, render: (l) => <span className="tabular-nums text-ink-soft">{money(l.aov)}</span> },
     {
       key: 'margin',
       header: 'Profitability',
@@ -99,9 +99,9 @@ export default function Locations() {
             </div>
             <div className="grid grid-cols-3 divide-x divide-line border-b border-line">
               {[
-                { l: 'Revenue', v: pkr(l.revenue, { compact: true }) },
+                { l: 'Revenue', v: money(l.revenue, { compact: true }) },
                 { l: 'Orders', v: num(l.orders) },
-                { l: 'AOV', v: pkr(l.aov) },
+                { l: 'AOV', v: money(l.aov) },
               ].map((s) => (
                 <div key={s.l} className="px-3 py-2.5">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{s.l}</p>
@@ -151,7 +151,7 @@ export default function Locations() {
               { key: 'downtown', label: 'Downtown Branch', color: '#2F6FA8', type: 'line' },
               { key: 'gulshan', label: 'Gulshan Branch', color: '#C08A16', type: 'line' },
             ]}
-            valueFormat={(v) => pkr(v * 1000, { compact: true })}
+            valueFormat={(v) => money(v * 1000, { compact: true })}
           />
         </ChartCard>
 
@@ -230,9 +230,9 @@ export function LocationDetail() {
       />
 
       <div className="mb-5 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-5">
-        <KpiCard label="Revenue" value={pkr(location.revenue, { compact: true })} change={location.trend} compare="vs previous period" icon="Wallet" tone="ember" />
+        <KpiCard label="Revenue" value={money(location.revenue, { compact: true })} change={location.trend} compare="vs previous period" icon="Wallet" tone="ember" />
         <KpiCard label="Orders" value={num(location.orders)} compare="demo period" icon="ReceiptText" tone="sky" />
-        <KpiCard label="Avg order value" value={pkr(location.aov)} compare="demo period" icon="TrendingUp" tone="gold" />
+        <KpiCard label="Avg order value" value={money(location.aov)} compare="demo period" icon="TrendingUp" tone="gold" />
         <KpiCard label="Profitability" value={`${location.margin}%`} compare="demo period" icon="Percent" tone="sage" />
         <KpiCard label="Wastage" value={`${location.wastage}%`} compare="demo period" icon="Trash2" tone="clay" />
       </div>
@@ -289,7 +289,7 @@ export function LocationDetail() {
                       {t.category} · {num(Math.round(t.units * 0.34))} units
                     </p>
                   </div>
-                  <span className="text-[13px] font-semibold tabular-nums text-ink">{pkr(Math.round(t.revenue * 0.34), { compact: true })}</span>
+                  <span className="text-[13px] font-semibold tabular-nums text-ink">{money(Math.round(t.revenue * 0.34), { compact: true })}</span>
                 </div>
               ))}
             </div>
@@ -317,7 +317,7 @@ export function LocationDetail() {
                   data={LOCATION_TREND}
                   xKey="month"
                   series={[{ key: id === 'loc-1' ? 'clifton' : id === 'loc-2' ? 'downtown' : 'gulshan', label: location.name, color: '#B54E17', type: 'area' }]}
-                  valueFormat={(v) => pkr(v * 1000, { compact: true })}
+                  valueFormat={(v) => money(v * 1000, { compact: true })}
                   showLegend={false}
                 />
               </ChartCard>

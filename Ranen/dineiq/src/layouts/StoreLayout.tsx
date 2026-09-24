@@ -7,7 +7,7 @@ import { Modal } from '../components/ui/overlay'
 import { LiveBanner, EmberMark, FoodImage } from '../components/shared'
 import { useCart } from '../store/app'
 import { MENU, menuBySlug } from '../lib/data/menu'
-import { pkr } from '../lib/utils'
+import { money } from '../lib/utils'
 import { OFFERS } from '../lib/data/store'
 
 const NAV = [
@@ -359,7 +359,7 @@ export default function StoreLayout() {
                   <span className="block truncate text-[14px] font-semibold text-ink">{m.name}</span>
                   <span className="block truncate text-[12px] text-ink-muted">{m.category}</span>
                 </span>
-                <span className="text-[13px] font-bold text-ink">{pkr(m.price)}</span>
+                <span className="text-[13px] font-bold text-ink">{money(m.price)}</span>
               </Link>
             ))}
           </div>

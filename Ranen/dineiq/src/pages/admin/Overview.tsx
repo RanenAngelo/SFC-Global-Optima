@@ -4,7 +4,7 @@ import { Badge, Button, Card, CardHeader, Icon, Tabs, cn } from '../../component
 import { ChartCard, DonutChart, Sparkline, TrendChart, defaultCurrencyFormat } from '../../components/charts'
 import { KpiCard, MetricRow, StatusDot } from '../../components/shared'
 import { PageHeader } from '../../components/admin/PageHeader'
-import { num, pkr } from '../../lib/utils'
+import { num, money } from '../../lib/utils'
 import { FoodImage } from '../../components/shared'
 import { PageError, PageLoader, fmtDate, useApiFilters, useAuth } from '../../lib/api'
 import { useOverviewData } from '../../lib/live'
@@ -93,7 +93,7 @@ export default function Overview() {
             data={REVENUE_SERIES}
             xKey="day"
             series={series}
-            valueFormat={(v) => (trend === 'revenue' ? pkr(v, { compact: true }) : `${v} orders`)}
+            valueFormat={(v) => (trend === 'revenue' ? money(v, { compact: true }) : `${v} orders`)}
           />
         </ChartCard>
 
@@ -121,7 +121,7 @@ export default function Overview() {
             series={[
               { key: 'revenue', label: 'Revenue', color: '#B54E17', type: 'bar' },
             ]}
-            valueFormat={(v) => pkr(v, { compact: true })}
+            valueFormat={(v) => money(v, { compact: true })}
           />
         </ChartCard>
 
@@ -158,7 +158,7 @@ export default function Overview() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] font-semibold text-ink">{d.name}</p>
                   <p className="text-[12px] text-ink-muted">
-                    {d.units} units · {pkr(d.revenue, { compact: true })}
+                    {d.units} units · {money(d.revenue, { compact: true })}
                   </p>
                 </div>
                 {d.spark.length > 1 && (
@@ -226,7 +226,7 @@ export default function Overview() {
                   <div className="flex items-center gap-5">
                     <div className="text-right">
                       <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">Revenue</p>
-                      <p className="text-[14px] font-semibold tabular-nums text-ink">{pkr(l.revenue, { compact: true })}</p>
+                      <p className="text-[14px] font-semibold tabular-nums text-ink">{money(l.revenue, { compact: true })}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">Margin</p>
@@ -293,7 +293,7 @@ export default function Overview() {
                         {o.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-[13px] font-semibold tabular-nums text-ink">{pkr(o.total)}</td>
+                    <td className="px-4 py-3 text-right text-[13px] font-semibold tabular-nums text-ink">{money(o.total)}</td>
                   </tr>
                 ))}
               </tbody>

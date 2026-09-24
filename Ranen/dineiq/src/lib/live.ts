@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { apiFetch, fmtDate, timeAgoISO, useApi, useApiFilters, useMeta } from './api'
 import { useWorkspace } from '../store/app'
-import { num, pkr } from './utils'
+import { num, money } from './utils'
 
 /* ───────────────────────────── Date helpers ───────────────────────────── */
 
@@ -261,13 +261,13 @@ export function useOverviewData() {
     const distAvg = distN ? dist.reduce((s, r) => s + r.rating * r.n, 0) / distN : 0
 
     const KPIS: Kpi[] = [
-      { key: 'revenue', label: 'Total Revenue', value: pkr(k.revenue, { decimals: true }), change: pk ? pctChange(k.revenue, pk.revenue) : undefined, compare, hint: 'Live: gross completed sales in the selected period.', icon: 'Wallet', tone: 'ember' },
+      { key: 'revenue', label: 'Total Revenue', value: money(k.revenue, { decimals: true }), change: pk ? pctChange(k.revenue, pk.revenue) : undefined, compare, hint: 'Live: gross completed sales in the selected period.', icon: 'Wallet', tone: 'ember' },
       { key: 'orders', label: 'Total Orders', value: num(k.orders), change: pk ? pctChange(k.orders, pk.orders) : undefined, compare, hint: 'Live: completed orders in the selected period.', icon: 'Receipt', tone: 'sky' },
-      { key: 'aov', label: 'Average Order Value', value: pkr(k.aov, { decimals: true }), change: pk ? pctChange(k.aov, pk.aov) : undefined, compare, hint: 'Live: revenue divided by order count.', icon: 'TrendingUp', tone: 'gold' },
-      { key: 'profit', label: 'Gross Profit', value: pkr(k.profit, { decimals: true }), change: pk ? pctChange(k.profit, pk.profit) : undefined, compare, hint: 'Live: revenue less item cost.', icon: 'Coins', tone: 'sage' },
+      { key: 'aov', label: 'Average Order Value', value: money(k.aov, { decimals: true }), change: pk ? pctChange(k.aov, pk.aov) : undefined, compare, hint: 'Live: revenue divided by order count.', icon: 'TrendingUp', tone: 'gold' },
+      { key: 'profit', label: 'Gross Profit', value: money(k.profit, { decimals: true }), change: pk ? pctChange(k.profit, pk.profit) : undefined, compare, hint: 'Live: revenue less item cost.', icon: 'Coins', tone: 'sage' },
       { key: 'margin', label: 'Contribution Margin', value: `${margin.toFixed(1)}%`, change: pk ? pctChange(margin, pMargin) : undefined, compare, hint: 'Live: profit as a share of revenue.', icon: 'Percent', tone: 'sage' },
       { key: 'customers', label: 'Customer Count', value: num(k.customers), change: pk ? pctChange(k.customers, pk.customers) : undefined, compare, hint: 'Live: unique customers who ordered in the period.', icon: 'Users', tone: 'sky' },
-      { key: 'wastage', label: 'Food Wastage', value: `${wastePct.toFixed(1)}%`, compare: `${pkr(cur.data.wastage.cost, { compact: true })} cost in period`, hint: 'Live: recorded wastage cost as a share of revenue.', icon: 'Trash2', tone: 'clay' },
+      { key: 'wastage', label: 'Food Wastage', value: `${wastePct.toFixed(1)}%`, compare: `${money(cur.data.wastage.cost, { compact: true })} cost in period`, hint: 'Live: recorded wastage cost as a share of revenue.', icon: 'Trash2', tone: 'clay' },
       { key: 'rating', label: 'Average Rating', value: (lastM?.avg_rating ?? distAvg).toFixed(2), change: lastM && prevM ? pctChange(lastM.avg_rating, prevM.avg_rating) : undefined, compare: lastM && prevM ? 'vs previous month' : `${num(distN)} ratings all-time`, hint: 'Live: mean customer rating.', icon: 'Star', tone: 'gold' },
       { key: 'alerts', label: 'Open Alerts', value: num(cur.data.open_critical_anomalies), compare: 'critical + high anomalies', hint: 'Live: anomalies awaiting review.', icon: 'AlertTriangle', tone: 'clay' },
       { key: 'recs', label: 'Critical Actions', value: num(cur.data.critical_recommendations), compare: 'critical recommendations', hint: 'Live: critical pipeline recommendations.', icon: 'Lightbulb', tone: 'ember' },
@@ -375,7 +375,7 @@ export function useOverviewData() {
       title: r.title,
       description: r.action,
       metrics: [
-        { label: 'Est. impact', value: pkr(r.impact_rs, { decimals: true }) },
+        { label: 'Est. impact', value: money(r.impact_rs, { decimals: true }) },
         { label: 'Status', value: r.state },
       ],
     }))
@@ -502,4 +502,82 @@ export function useOrderDetail(orderId: string | null) {
     enabled: !!customerId,
   })
   return { detail: detail.data ?? null, loading: detail.loading, customer: customer.data ?? null }
+}
+
+/* ───────────────────────────── Menu management ───────────────────────────── */
+
+export type MenuRow = {
+  id: string
+  name: string
+  price: number
+  cost: number
+  marginPct: number
+  categoryId: string
+  category: string
+  rating: number
+  reviews: number
+  available: boolean
+  popular: boolean
+  demandTier: string
+  wastageTag: string
+  priceSensTag: string
+  seasonal: boolean
+  promoDep: boolean
+  introduced: string
+}
+
+export function useMenuData() {
+  const items = useApi<
+    {
+      item_id: string
+      item_name: string
+      category_id: string
+      base_cost: number
+      base_price: number
+      is_active: number
+      introduced_date: string
+      demand_tier: string
+      wastage_tag: string
+      price_sensitivity_tag: string
+      seasonal_tag: number
+      promo_dependent_tag: number
+      category_name: string
+    }[]
+  >('/menu/items')
+  const ratings = useApi<{ by_item: { item_id: string; avg_rating: number; n: number }[] }>('/ratings')
+
+  const loading = items.loading || ratings.loading
+  const error = items.error ?? ratings.error
+  const refetch = () => {
+    items.refetch()
+    ratings.refetch()
+  }
+
+  const shaped = useMemo(() => {
+    if (!items.data) return null
+    const rById: Record<string, { avg_rating: number; n: number }> = {}
+    for (const r of ratings.data?.by_item ?? []) rById[r.item_id] = r
+    const rows: MenuRow[] = items.data.map((m) => ({
+      id: m.item_id,
+      name: m.item_name,
+      price: m.base_price,
+      cost: m.base_cost,
+      marginPct: m.base_price > 0 ? Math.round(((m.base_price - m.base_cost) / m.base_price) * 1000) / 10 : 0,
+      categoryId: m.category_id,
+      category: m.category_name,
+      rating: rById[m.item_id] ? Math.round(rById[m.item_id].avg_rating * 10) / 10 : 0,
+      reviews: rById[m.item_id]?.n ?? 0,
+      available: m.is_active === 1,
+      popular: m.demand_tier === 'High',
+      demandTier: m.demand_tier,
+      wastageTag: m.wastage_tag,
+      priceSensTag: m.price_sensitivity_tag,
+      seasonal: m.seasonal_tag === 1,
+      promoDep: m.promo_dependent_tag === 1,
+      introduced: (m.introduced_date ?? '').slice(0, 10),
+    }))
+    return { rows }
+  }, [items.data, ratings.data])
+
+  return { data: shaped, loading, error, refetch }
 }

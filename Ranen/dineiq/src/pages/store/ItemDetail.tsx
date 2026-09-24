@@ -8,7 +8,7 @@ import { MENU, menuBySlug, pairedItems, relatedItems } from '../../lib/data/menu
 import { BUNDLES } from '../../lib/data/analytics'
 import { REVIEWS } from '../../lib/data/store'
 import { useCart, useFavourites } from '../../store/app'
-import { pkr } from '../../lib/utils'
+import { money } from '../../lib/utils'
 import { EmptyState } from '../../components/ui/states'
 import { DishCard } from '../../components/store/DishCard'
 
@@ -59,7 +59,7 @@ export default function ItemDetail() {
   const handleAdd = (goToCart = false) => {
     add(item, { size: size?.label, addons: chosenAddons, instructions, qty })
     setAdded(true)
-    push({ title: `${qty} × ${item.name} added to cart`, body: `${pkr(unitPrice * qty)} · ${item.prep} prep`, tone: 'success' })
+    push({ title: `${qty} × ${item.name} added to cart`, body: `${money(unitPrice * qty)} · ${item.prep} prep`, tone: 'success' })
     setTimeout(() => setAdded(false), 2200)
     if (goToCart) navigate('/cart')
   }
@@ -248,7 +248,7 @@ export default function ItemDetail() {
               <p className="mt-3.5 text-[14px] leading-relaxed text-ink-muted">{item.desc}</p>
 
               <div className="mt-4 flex items-baseline gap-2">
-                <span className="font-display text-[28px] font-semibold text-ink">{pkr(unitPrice)}</span>
+                <span className="font-display text-[28px] font-semibold text-ink">{money(unitPrice)}</span>
                 <span className="text-[13px] text-ink-faint">incl. taxes</span>
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function ItemDetail() {
                           <span className="text-[13.5px] font-medium text-ink">{s.label}</span>
                         </span>
                         <span className="text-[13px] font-semibold tabular-nums text-ink">
-                          {s.delta === 0 ? pkr(item.price) : `${s.delta > 0 ? '+' : '−'} ${pkr(Math.abs(s.delta))}`}
+                          {s.delta === 0 ? money(item.price) : `${s.delta > 0 ? '+' : '−'} ${money(Math.abs(s.delta))}`}
                         </span>
                       </label>
                     ))}
@@ -295,7 +295,7 @@ export default function ItemDetail() {
                         label={
                           <span className="flex items-center justify-between gap-3">
                             <span>{a.name}</span>
-                            <span className="font-semibold text-ink">{a.price === 0 ? 'Free' : `+ ${pkr(a.price)}`}</span>
+                            <span className="font-semibold text-ink">{a.price === 0 ? 'Free' : `+ ${money(a.price)}`}</span>
                           </span>
                         }
                         checked={addons.includes(a.name)}
@@ -331,13 +331,13 @@ export default function ItemDetail() {
                 </div>
                 <div className="text-right">
                   <p className="text-[11.5px] font-semibold uppercase tracking-wide text-ink-faint">Item total</p>
-                  <p className="font-display text-[22px] font-semibold text-ink">{pkr(unitPrice * qty)}</p>
+                  <p className="font-display text-[22px] font-semibold text-ink">{money(unitPrice * qty)}</p>
                 </div>
               </div>
 
               <div className="space-y-2.5">
                 <Button block size="lg" icon={added ? 'Check' : 'ShoppingBag'} onClick={() => handleAdd(false)} disabled={!item.available}>
-                  {added ? 'Added to cart' : item.available ? `Add to cart · ${pkr(unitPrice * qty)}` : 'Currently unavailable'}
+                  {added ? 'Added to cart' : item.available ? `Add to cart · ${money(unitPrice * qty)}` : 'Currently unavailable'}
                 </Button>
                 <Button block size="lg" variant="dark" iconRight="ArrowRight" onClick={() => handleAdd(true)} disabled={!item.available}>
                   Order now
@@ -380,7 +380,7 @@ export default function ItemDetail() {
                 <Link to={`/menu/${p.slug}`}>
                   <p className="truncate text-[14px] font-semibold text-ink hover:text-ember-700">{p.name}</p>
                 </Link>
-                <p className="text-[12.5px] text-ink-muted">{pkr(p.price)} · {p.prep}</p>
+                <p className="text-[12.5px] text-ink-muted">{money(p.price)} · {p.prep}</p>
               </div>
               <Button size="sm" variant="secondary" icon="Plus" onClick={() => { add(p); push({ title: `${p.name} added`, tone: 'success' }) }}>
                 Add
@@ -409,8 +409,8 @@ export default function ItemDetail() {
                     ))}
                   </ul>
                   <div className="mt-3.5 flex items-center gap-2">
-                    <span className="font-display text-[18px] font-semibold text-ink">{pkr(b.price)}</span>
-                    <span className="text-[12.5px] text-ink-faint line-through">{pkr(b.was)}</span>
+                    <span className="font-display text-[18px] font-semibold text-ink">{money(b.price)}</span>
+                    <span className="text-[12.5px] text-ink-faint line-through">{money(b.was)}</span>
                   </div>
                   <Button
                     size="sm"

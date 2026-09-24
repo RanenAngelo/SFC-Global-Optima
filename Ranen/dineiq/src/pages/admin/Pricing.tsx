@@ -6,7 +6,7 @@ import { PageHeader } from '../../components/admin/PageHeader'
 import { ChartCard, LineSeries, TrendChart } from '../../components/charts'
 import { DemoNote, FoodImage, KpiCard, MetricRow, Progress } from '../../components/shared'
 import { LOCATION_PRICING, PRICE_HISTORY, PRICE_IMPACT, PRICING_ROWS, type PricingRow } from '../../lib/data/analytics'
-import { pkr, num } from '../../lib/utils'
+import { money, num } from '../../lib/utils'
 
 const SENSITIVITY_TONE: Record<string, 'clay' | 'gold' | 'sage'> = {
   'Highly Price Sensitive': 'clay',
@@ -52,7 +52,7 @@ export default function Pricing() {
       header: 'Current price',
       align: 'right',
       sort: (x, y) => x.current - y.current,
-      render: (r) => <span className="font-semibold tabular-nums text-ink">{pkr(r.current)}</span>,
+      render: (r) => <span className="font-semibold tabular-nums text-ink">{money(r.current)}</span>,
     },
     {
       key: 'previous',
@@ -60,7 +60,7 @@ export default function Pricing() {
       align: 'right',
       hideBelow: 'md',
       sort: (x, y) => x.previous - y.previous,
-      render: (r) => <span className="tabular-nums text-ink-muted">{pkr(r.previous)}</span>,
+      render: (r) => <span className="tabular-nums text-ink-muted">{money(r.previous)}</span>,
     },
     {
       key: 'changePct',
@@ -98,7 +98,7 @@ export default function Pricing() {
       sort: (x, y) => x.revenueAfter - x.revenueBefore - (y.revenueAfter - y.revenueBefore),
       render: (r) => {
         const d = r.revenueAfter - r.revenueBefore
-        return <span className={cn('tabular-nums font-semibold', d >= 0 ? 'text-sage-600' : 'text-clay-600')}>{d >= 0 ? '+' : '−'} {pkr(Math.abs(d), { compact: true })}</span>
+        return <span className={cn('tabular-nums font-semibold', d >= 0 ? 'text-sage-600' : 'text-clay-600')}>{d >= 0 ? '+' : '−'} {money(Math.abs(d), { compact: true })}</span>
       },
     },
     {
@@ -221,7 +221,7 @@ export default function Pricing() {
               { key: 'price', label: 'Price', color: '#B54E17', type: 'line' },
               { key: 'units', label: 'Units sold', color: '#2F6FA8', type: 'bar' },
             ]}
-            valueFormat={(v, n) => (n === 'Price' ? pkr(v) : `${num(v)} units`)}
+            valueFormat={(v, n) => (n === 'Price' ? money(v) : `${num(v)} units`)}
           />
         </ChartCard>
 
@@ -233,10 +233,10 @@ export default function Pricing() {
           </div>
           <div className="divide-y divide-line border-t border-line">
             {[
-              { l: 'Current price', a: pkr(a.current), b: pkr(b.current) },
+              { l: 'Current price', a: money(a.current), b: money(b.current) },
               { l: 'Price change', a: `${a.changePct.toFixed(1)}%`, b: `${b.changePct.toFixed(1)}%` },
               { l: 'Units before → after', a: `${a.unitsBefore} → ${a.unitsAfter}`, b: `${b.unitsBefore} → ${b.unitsAfter}` },
-              { l: 'Revenue change', a: `${a.revenueAfter - a.revenueBefore >= 0 ? '+' : '−'}${pkr(Math.abs(a.revenueAfter - a.revenueBefore), { compact: true })}`, b: `${b.revenueAfter - b.revenueBefore >= 0 ? '+' : '−'}${pkr(Math.abs(b.revenueAfter - b.revenueBefore), { compact: true })}` },
+              { l: 'Revenue change', a: `${a.revenueAfter - a.revenueBefore >= 0 ? '+' : '−'}${money(Math.abs(a.revenueAfter - a.revenueBefore), { compact: true })}`, b: `${b.revenueAfter - b.revenueBefore >= 0 ? '+' : '−'}${money(Math.abs(b.revenueAfter - b.revenueBefore), { compact: true })}` },
               { l: 'Margin', a: `${a.marginAfter.toFixed(1)}%`, b: `${b.marginAfter.toFixed(1)}%` },
               { l: 'Sensitivity', a: a.sensitivity, b: b.sensitivity },
             ].map((r) => (
@@ -281,12 +281,12 @@ export default function Pricing() {
                 return (
                   <tr key={r.item} className="border-t border-line/70">
                     <td className="px-4 py-3 text-[13px] font-medium text-ink">{r.item}</td>
-                    <td className="px-4 py-3 text-[13px] font-semibold tabular-nums text-ink">{pkr(r.clifton)}</td>
-                    <td className="px-4 py-3 text-[13px] tabular-nums text-ink-soft">{pkr(r.downtown)}</td>
-                    <td className="px-4 py-3 text-[13px] tabular-nums text-ink-soft">{pkr(r.gulshan)}</td>
+                    <td className="px-4 py-3 text-[13px] font-semibold tabular-nums text-ink">{money(r.clifton)}</td>
+                    <td className="px-4 py-3 text-[13px] tabular-nums text-ink-soft">{money(r.downtown)}</td>
+                    <td className="px-4 py-3 text-[13px] tabular-nums text-ink-soft">{money(r.gulshan)}</td>
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-canvas-deep px-2 py-0.5 text-[11.5px] font-bold text-ink-muted">
-                        {pkr(spread)}
+                        {money(spread)}
                       </span>
                     </td>
                   </tr>
@@ -316,7 +316,7 @@ export default function Pricing() {
         open={!!active}
         onClose={() => setActive(null)}
         title={active?.name ?? ''}
-        subtitle={active ? `${active.category} · ${pkr(active.current)}` : ''}
+        subtitle={active ? `${active.category} · ${money(active.current)}` : ''}
         width="lg"
         badge={active ? <Badge tone={SENSITIVITY_TONE[active.sensitivity] ?? 'neutral'}>{active.sensitivity}</Badge> : undefined}
         footer={
@@ -336,8 +336,8 @@ export default function Pricing() {
           <div className="space-y-4 p-5">
             <div className="grid gap-3 sm:grid-cols-3">
               {[
-                { l: 'Previous price', v: pkr(active.previous) },
-                { l: 'Current price', v: pkr(active.current) },
+                { l: 'Previous price', v: money(active.previous) },
+                { l: 'Current price', v: money(active.current) },
                 { l: 'Change', v: `${active.changePct > 0 ? '+' : ''}${active.changePct.toFixed(1)}%` },
               ].map((s) => (
                 <div key={s.l} className="rounded-xl border border-line bg-white p-3.5">
@@ -353,8 +353,8 @@ export default function Pricing() {
                 {[
                   { l: 'Units before', v: num(active.unitsBefore), sub: 'prior price' },
                   { l: 'Units after', v: num(active.unitsAfter), sub: 'current price' },
-                  { l: 'Revenue before', v: pkr(active.revenueBefore, { compact: true }), sub: 'prior price' },
-                  { l: 'Revenue after', v: pkr(active.revenueAfter, { compact: true }), sub: 'current price' },
+                  { l: 'Revenue before', v: money(active.revenueBefore, { compact: true }), sub: 'prior price' },
+                  { l: 'Revenue after', v: money(active.revenueAfter, { compact: true }), sub: 'current price' },
                 ].map((s) => (
                   <div key={s.l} className="rounded-xl border border-line p-3">
                     <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">{s.l}</p>

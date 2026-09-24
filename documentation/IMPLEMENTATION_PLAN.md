@@ -24,7 +24,7 @@ Rule: implement in this exact order; each step is COMPLETE only when implemented
 | 17 | Market-Basket Analysis (Support/Confidence/Lift) | ✅ COMPLETE |
 | 18 | Bundle and Cross-Sell Recommendations (association-rule evidence) | ✅ COMPLETE |
 | 19 | Peak-Period Analysis (hours/days/weekend/monthly/seasonal/location/channel) | ✅ COMPLETE |
-| 20 | Demand Forecasting (items/categories/locations; configurable horizons) | PENDING |
+| 20 | Demand Forecasting (items/categories/locations; configurable horizons) | ✅ COMPLETE |
 | 21 | Time-Aware Model Validation (chronological split, no leakage) | ✅ COMPLETE |
 | 22 | Forecast Accuracy Evaluation (MAE/RMSE/MAPE/R²) | ✅ COMPLETE |
 | 23 | Wastage Analysis (9 breakdown dimensions) | PENDING |

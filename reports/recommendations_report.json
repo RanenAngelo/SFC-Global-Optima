@@ -1,0 +1,18 @@
+{
+  "recommendations": 33,
+  "by_priority": {
+    "Medium": 15,
+    "Critical": 11,
+    "High": 7
+  },
+  "by_type": {
+    "menu_promotion": 5,
+    "wastage_reduction": 5,
+    "pricing": 5,
+    "bundling": 5,
+    "inventory": 5,
+    "promotion_review": 4,
+    "location_investigation": 3,
+    "customer_targeting": 1
+  }
+}

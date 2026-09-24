@@ -1,0 +1,91 @@
+{
+  "sample_item": "M0135",
+  "price_up_10pct": {
+    "scenario": "price_change",
+    "item_id": "M0135",
+    "estimate": true,
+    "inputs": {
+      "old_price": 16.69,
+      "new_price": 18.36
+    },
+    "impact": {
+      "demand_pct": 58.2,
+      "revenue_delta": 11349.93,
+      "margin_delta": 6960.14
+    },
+    "assumptions": [
+      "elasticity e=5.821 (median measured elasticity (assumption))",
+      "unit cost constant",
+      "no competitor response",
+      "window = full history scale"
+    ]
+  },
+  "discount_15pct_14d": {
+    "scenario": "discount_change",
+    "item_id": "M0135",
+    "estimate": true,
+    "inputs": {
+      "discount_pct": 0.15,
+      "days": 14
+    },
+    "impact": {
+      "revenue_delta": -502.66,
+      "margin_delta": -283.38,
+      "volume_lift_x": 0.46
+    },
+    "assumptions": [
+      "observed item promo lift",
+      "lift constant over window",
+      "no cannibalization"
+    ]
+  },
+  "remove": {
+    "scenario": "remove_item",
+    "item_id": "M0135",
+    "estimate": true,
+    "inputs": {},
+    "impact": {
+      "revenue_delta": -15256.8,
+      "margin_delta": -7720.02,
+      "wastage_cost_saved": 277.5
+    },
+    "assumptions": [
+      "no substitution to other items",
+      "full waste saving"
+    ]
+  },
+  "prep_cut_20pct": {
+    "scenario": "reduce_prep",
+    "item_id": "M0135",
+    "estimate": true,
+    "inputs": {
+      "cut_pct": 0.2
+    },
+    "impact": {
+      "wastage_qty_saved": 5.4,
+      "wastage_cost_saved": 44.4,
+      "stockout_risk": "low"
+    },
+    "assumptions": [
+      "80% of cut converts to waste saved",
+      "demand unchanged"
+    ]
+  },
+  "demand_up_10pct": {
+    "scenario": "demand_shift",
+    "item_id": "M0135",
+    "estimate": true,
+    "inputs": {
+      "demand_pct": 0.1
+    },
+    "impact": {
+      "revenue_delta": 1525.68,
+      "margin_delta": 772.0,
+      "wastage_qty_delta": 3.4
+    },
+    "assumptions": [
+      "linear scale of revenue/margin/waste",
+      "price constant"
+    ]
+  }
+}

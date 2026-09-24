@@ -41,11 +41,11 @@ Rule: implement in this exact order; each step is COMPLETE only when implemented
 | 34 | Location-Specific Menu Performance (per-location 4-class) | ✅ COMPLETE |
 | 35 | Ordering Channel Analysis (channels × 7 comparisons) | ✅ COMPLETE |
 | 36 | Customer Churn-Risk Identification (5 factors) | ✅ COMPLETE |
-| 37 | Recommendation Engine (9 evidence-based recommendation types) | PENDING |
-| 38 | Recommendation Evidence (every recommendation explained) | PENDING |
-| 39 | Recommendation Priority (Low/Medium/High/Critical by business impact) | PENDING |
-| 40 | What-If Scenario Analysis (8 scenario types) | PENDING |
-| 41 | Scenario Impact Analysis (impact on 5 indicators; labelled estimates) | PENDING |
+| 37 | Recommendation Engine (9 evidence-based recommendation types) | ✅ COMPLETE |
+| 38 | Recommendation Evidence (every recommendation explained) | ✅ COMPLETE |
+| 39 | Recommendation Priority (Low/Medium/High/Critical by business impact) | ✅ COMPLETE |
+| 40 | What-If Scenario Analysis (8 scenario types) | ✅ COMPLETE |
+| 41 | Scenario Impact Analysis (impact on 5 indicators; labelled estimates) | ✅ COMPLETE |
 | 42 | Executive Dashboard (10 KPIs) | PENDING |
 | 43 | Menu Intelligence Dashboard (9 elements) | PENDING |
 | 44 | Customer Intelligence Dashboard (6 elements) | PENDING |

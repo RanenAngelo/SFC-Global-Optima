@@ -1,58 +1,124 @@
 import React, { useMemo, useState } from 'react'
-import { Badge, Button, Card, Icon, SearchInput, Select, Tabs, Tooltip, cn } from '../../components/ui/primitives'
+import { Link } from 'react-router-dom'
+import { Badge, Button, Card, Icon, SearchInput, Select, Tabs, cn } from '../../components/ui/primitives'
 import { DataTable, Column } from '../../components/ui/table'
 import { Drawer, useToast } from '../../components/ui/overlay'
 import { PageHeader } from '../../components/admin/PageHeader'
-import { DateRangeSelect, LocationSelect, StatusDot } from '../../components/shared'
-import { ADMIN_ORDERS, type AdminOrder } from '../../lib/data/analytics'
-import { pkr } from '../../lib/utils'
+import { DateRangeSelect, LiveNote, StatusDot } from '../../components/shared'
+import { PageError, PageLoader, apiFetch, useAuth, useMeta } from '../../lib/api'
+import { useOrderDetail, useOrdersData, type LiveOrder, type OrderDetail } from '../../lib/live'
+import { num, pkr } from '../../lib/utils'
 
 const STATUS_TONE: Record<string, 'ember' | 'sage' | 'clay' | 'sky' | 'neutral' | 'gold'> = {
-  Pending: 'gold',
-  Preparing: 'ember',
-  Ready: 'sky',
   Completed: 'sage',
   Cancelled: 'clay',
 }
 
-const PAY_TONE: Record<string, 'sage' | 'clay' | 'gold'> = { Paid: 'sage', Unpaid: 'gold', Refunded: 'clay' }
+function printReceipts(groups: { order: OrderDetail['order']; lines: OrderDetail['lines'] }[]) {
+  const w = window.open('', '_blank', 'width=420,height=640')
+  if (!w) return false
+  const body = groups
+    .map(
+      ({ order, lines }) => `
+      <div class="receipt">
+        <h2>DineIQ Analytics</h2>
+        <p>${order.restaurant_name}</p>
+        <p>${order.order_id} · ${order.order_datetime.slice(0, 16)} · ${order.channel}</p>
+        <hr/>
+        ${lines.map((l) => `<p>${l.quantity} × ${l.item_name}<span>$${l.line_total.toFixed(2)}</span></p>`).join('')}
+        <hr/>
+        <p class="total">Total<span>$${order.total_amount.toFixed(2)}</span></p>
+        <p>${order.promotion_id ? 'Promo ' + order.promotion_id : 'No promo'} · ${order.status}</p>
+      </div>`,
+    )
+    .join('')
+  w.document.write(`<html><head><title>Receipts</title><style>
+    body{font-family:monospace;padding:16px;color:#111}.receipt{margin-bottom:32px;page-break-inside:avoid}
+    h2{margin:0 0 4px;font-size:18px}p{margin:2px 0;font-size:13px;display:flex;justify-content:space-between;gap:12px}
+    hr{border:none;border-top:1px dashed #999;margin:8px 0}.total{font-weight:bold;font-size:15px}
+  </style></head><body>${body}<script>window.onload=()=>window.print()<\/script></body></html>`)
+  w.document.close()
+  return true
+}
 
 export default function Orders() {
   const { push } = useToast()
+  const { can } = useAuth()
+  const { options: meta } = useMeta()
+  const { data, loading, error, refetch } = useOrdersData()
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
   const [channel, setChannel] = useState('all')
-  const [location, setLocation] = useState('all')
-  const [payment, setPayment] = useState('all')
-  const [loading, setLoading] = useState(false)
-  const [active, setActive] = useState<AdminOrder | null>(null)
+  const [active, setActive] = useState<LiveOrder | null>(null)
   const [selected, setSelected] = useState<string[]>([])
+  const [mutating, setMutating] = useState(false)
 
-  const counts = useMemo(
-    () => ({
-      all: ADMIN_ORDERS.length,
-      Pending: ADMIN_ORDERS.filter((o) => o.status === 'Pending').length,
-      Preparing: ADMIN_ORDERS.filter((o) => o.status === 'Preparing').length,
-      Completed: ADMIN_ORDERS.filter((o) => o.status === 'Completed').length,
-      Cancelled: ADMIN_ORDERS.filter((o) => o.status === 'Cancelled').length,
-    }),
-    [],
-  )
+  const { detail, loading: detailLoading, customer } = useOrderDetail(active?.id ?? null)
 
   const rows = useMemo(() => {
-    let r = ADMIN_ORDERS
+    let r = data?.rows ?? []
     if (tab !== 'all') r = r.filter((o) => o.status === tab)
     if (channel !== 'all') r = r.filter((o) => o.channel === channel)
-    if (location !== 'all') r = r.filter((o) => o.location === location)
-    if (payment !== 'all') r = r.filter((o) => o.payment === payment)
     const q = query.trim().toLowerCase()
-    if (q) r = r.filter((o) => o.number.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q) || o.items.some((i) => i.name.toLowerCase().includes(q)))
+    if (q) r = r.filter((o) => o.number.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q))
     return r
-  }, [tab, channel, location, payment, query])
+  }, [data, tab, channel, query])
 
-  const hasFilters = channel !== 'all' || location !== 'all' || payment !== 'all' || !!query
+  const hasFilters = channel !== 'all' || !!query || tab !== 'all'
 
-  const columns: Column<AdminOrder>[] = [
+  async function setStatus(orderId: string, status: 'Completed' | 'Cancelled') {
+    setMutating(true)
+    try {
+      await apiFetch(`/orders/${orderId}`, { method: 'PATCH', body: { status } })
+      push({ title: `Order ${status.toLowerCase()}`, body: `${orderId} → ${status}.`, tone: 'success' })
+      refetch()
+      if (active?.id === orderId) setActive((a) => (a ? { ...a, status } : a))
+    } catch (e) {
+      push({ title: 'Update failed', body: e instanceof Error ? e.message : 'Unknown error', tone: 'error' })
+    } finally {
+      setMutating(false)
+    }
+  }
+
+  async function bulkComplete() {
+    const targets = selected.filter((id) => data?.rows.find((r) => r.id === id)?.status !== 'Completed')
+    if (targets.length === 0) return
+    setMutating(true)
+    let ok = 0
+    for (const id of targets) {
+      try {
+        await apiFetch(`/orders/${id}`, { method: 'PATCH', body: { status: 'Completed' } })
+        ok += 1
+      } catch {
+        /* surfaced below */
+      }
+    }
+    setMutating(false)
+    setSelected([])
+    refetch()
+    push({
+      title: ok === targets.length ? 'Orders completed' : 'Partially completed',
+      body: `${ok} of ${targets.length} selected order(s) marked completed.`,
+      tone: ok === targets.length ? 'success' : 'error',
+    })
+  }
+
+  async function bulkPrint() {
+    const groups: { order: OrderDetail['order']; lines: OrderDetail['lines'] }[] = []
+    for (const id of selected) {
+      try {
+        const d = await apiFetch<OrderDetail>(`/orders/${id}`)
+        groups.push({ order: d.order, lines: d.lines })
+      } catch {
+        /* skip */
+      }
+    }
+    if (groups.length === 0 || !printReceipts(groups)) {
+      push({ title: 'Print blocked', body: 'Allow popups to print receipts.', tone: 'error' })
+    }
+  }
+
+  const columns: Column<LiveOrder>[] = [
     {
       key: 'number',
       header: 'Order',
@@ -62,7 +128,7 @@ export default function Orders() {
         <div>
           <p className="font-mono text-[12.5px] font-bold text-ink">{o.number}</p>
           <p className="text-[11.5px] text-ink-faint">
-            {o.time} · {o.table ?? o.channel}
+            {o.time} · {o.channel}
           </p>
         </div>
       ),
@@ -73,8 +139,8 @@ export default function Orders() {
       sort: (a, b) => a.customer.localeCompare(b.customer),
       render: (o) => (
         <div>
-          <p className="text-[13px] font-semibold text-ink">{o.customer}</p>
-          <p className="text-[11.5px] text-ink-faint">{o.phone}</p>
+          <p className="font-mono text-[12.5px] font-semibold text-ink">{o.customer}</p>
+          <p className="text-[11.5px] text-ink-faint">{o.promo ? `Promo ${o.promo}` : 'No promo'}</p>
         </div>
       ),
     },
@@ -95,11 +161,8 @@ export default function Orders() {
       header: 'Items',
       align: 'center',
       hideBelow: 'md',
-      render: (o) => (
-        <Tooltip content={o.items.map((i) => `${i.qty}× ${i.name}`).join(' · ')}>
-          <span className="text-[13px] font-semibold text-ink-soft">{o.items.reduce((s, i) => s + i.qty, 0)}</span>
-        </Tooltip>
-      ),
+      sort: (a, b) => a.itemsQty - b.itemsQty,
+      render: (o) => <span className="text-[13px] font-semibold text-ink-soft">{o.itemsQty}</span>,
     },
     {
       key: 'status',
@@ -112,15 +175,15 @@ export default function Orders() {
       ),
     },
     {
-      key: 'payment',
-      header: 'Payment',
+      key: 'promo',
+      header: 'Promotion',
       hideBelow: 'lg',
-      render: (o) => (
-        <div>
-          <Badge tone={PAY_TONE[o.payment] ?? 'neutral'}>{o.payment}</Badge>
-          <p className="mt-1 text-[11px] text-ink-faint">{o.paymentMethod}</p>
-        </div>
-      ),
+      render: (o) =>
+        o.promo ? (
+          <Badge tone="gold">{o.promo}</Badge>
+        ) : (
+          <span className="text-[12px] text-ink-faint">—</span>
+        ),
     },
     {
       key: 'total',
@@ -142,25 +205,33 @@ export default function Orders() {
     },
   ]
 
+  if (loading && !data) return <PageLoader />
+  if (error || !data) return <PageError message={error ?? 'No orders.'} onRetry={refetch} />
+
+  const counts = data.counts
+
   return (
     <div>
       <PageHeader
         eyebrow="Operations"
         title="Order Management"
-        subtitle="Every order across dine-in, takeaway, website and delivery platforms. All rows are fictional demo records."
-        onRefresh={() => {
-          setLoading(true)
-          setTimeout(() => setLoading(false), 800)
-        }}
+        subtitle="Every order across dine-in, takeaway, website and delivery platforms — live from the DineIQ API."
+        onRefresh={refetch}
       />
+      {data.truncated && (
+        <LiveNote className="mb-5">
+          Showing the most recent {num(data.rows.length)} of {num(data.total)} orders in range — narrow the date or
+          location filters for complete results.
+        </LiveNote>
+      )}
 
       {/* Summary strip */}
       <div className="mb-5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { l: 'Orders today', v: '186', d: '+12 vs yesterday', i: 'ReceiptText', t: 'text-sky-600' },
-          { l: 'Pending action', v: `${counts.Pending + counts.Preparing}`, d: 'Needs kitchen attention', i: 'Clock', t: 'text-gold-600' },
-          { l: 'Average order value', v: pkr(1140), d: 'Across all channels', i: 'TrendingUp', t: 'text-sage-600' },
-          { l: 'Cancelled', v: `${counts.Cancelled}`, d: 'Refunded or voided', i: 'XCircle', t: 'text-clay-600' },
+          { l: 'Orders in range', v: num(counts.all), d: 'Across all channels', i: 'ReceiptText', t: 'text-sky-600' },
+          { l: 'Completed', v: num(counts.Completed), d: 'Fulfilled orders', i: 'CheckCircle2', t: 'text-sage-600' },
+          { l: 'Average order value', v: pkr(data.aov), d: 'Across all channels', i: 'TrendingUp', t: 'text-sage-600' },
+          { l: 'Cancelled', v: num(counts.Cancelled), d: 'Voided orders', i: 'XCircle', t: 'text-clay-600' },
         ].map((s) => (
           <Card key={s.l} className="flex items-center gap-3.5 p-4">
             <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-canvas-deep', s.t)}>
@@ -182,8 +253,6 @@ export default function Orders() {
             onChange={setTab}
             tabs={[
               { label: 'All orders', value: 'all', count: counts.all },
-              { label: 'Pending', value: 'Pending', count: counts.Pending },
-              { label: 'Preparing', value: 'Preparing', count: counts.Preparing },
               { label: 'Completed', value: 'Completed', count: counts.Completed },
               { label: 'Cancelled', value: 'Cancelled', count: counts.Cancelled },
             ]}
@@ -191,25 +260,14 @@ export default function Orders() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
-          <SearchInput value={query} onChange={setQuery} placeholder="Search order, customer or dish…" className="w-full sm:w-64" />
+          <SearchInput value={query} onChange={setQuery} placeholder="Search order or customer…" className="w-full sm:w-64" />
           <Select value={channel} onChange={(e) => setChannel(e.target.value)} className="w-auto" aria-label="Channel">
             <option value="all">All channels</option>
-            <option value="Dine-in">Dine-in</option>
-            <option value="Takeaway">Takeaway</option>
-            <option value="Website">Website</option>
-            <option value="Delivery platform">Delivery platform</option>
-          </Select>
-          <Select value={location} onChange={(e) => setLocation(e.target.value)} className="w-auto" aria-label="Location">
-            <option value="all">All locations</option>
-            <option value="Clifton Branch">Clifton Branch</option>
-            <option value="Downtown Branch">Downtown Branch</option>
-            <option value="Gulshan Branch">Gulshan Branch</option>
-          </Select>
-          <Select value={payment} onChange={(e) => setPayment(e.target.value)} className="w-auto" aria-label="Payment status">
-            <option value="all">Any payment status</option>
-            <option value="Paid">Paid</option>
-            <option value="Unpaid">Unpaid</option>
-            <option value="Refunded">Refunded</option>
+            {(meta?.channels ?? []).map((c: string) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </Select>
           <DateRangeSelect className="ml-auto hidden sm:block" />
           {hasFilters && (
@@ -220,8 +278,7 @@ export default function Orders() {
               onClick={() => {
                 setQuery('')
                 setChannel('all')
-                setLocation('all')
-                setPayment('all')
+                setTab('all')
               }}
             >
               Reset
@@ -233,10 +290,17 @@ export default function Orders() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ember-200 bg-ember-50 px-4 py-2.5">
             <p className="text-[13px] font-semibold text-ember-800">{selected.length} order(s) selected</p>
             <div className="flex gap-2">
-              <Button size="xs" variant="secondary" icon="Printer">
+              <Button size="xs" variant="secondary" icon="Printer" onClick={() => void bulkPrint()}>
                 Print receipts
               </Button>
-              <Button size="xs" variant="secondary" icon="Check">
+              <Button
+                size="xs"
+                variant="secondary"
+                icon="Check"
+                disabled={mutating || !can('manager')}
+                title={can('manager') ? 'Mark selected completed' : 'Requires manager role'}
+                onClick={() => void bulkComplete()}
+              >
                 Mark completed
               </Button>
               <Button size="xs" variant="ghost" onClick={() => setSelected([])}>
@@ -258,7 +322,7 @@ export default function Orders() {
           pageSize={8}
           initialSort={{ key: 'number', dir: 'desc' }}
           emptyTitle="No orders match these filters"
-          emptyMessage="Try a different channel, location or payment status."
+          emptyMessage="Try a different channel or widen the date range."
           emptyAction={
             hasFilters ? (
               <Button
@@ -268,8 +332,7 @@ export default function Orders() {
                 onClick={() => {
                   setQuery('')
                   setChannel('all')
-                  setLocation('all')
-                  setPayment('all')
+                  setTab('all')
                 }}
               >
                 Clear filters
@@ -293,13 +356,34 @@ export default function Orders() {
               <Button
                 variant="secondary"
                 icon="Printer"
-                onClick={() => push({ title: 'Receipt opened (demo)', body: 'Print dialog is visual only', tone: 'info' })}
+                disabled={!detail}
+                onClick={() => {
+                  if (detail && !printReceipts([{ order: detail.order, lines: detail.lines }])) {
+                    push({ title: 'Print blocked', body: 'Allow popups to print receipts.', tone: 'error' })
+                  }
+                }}
               >
                 Print receipt
               </Button>
-              {active.status !== 'Completed' && active.status !== 'Cancelled' && (
-                <Button icon="Check" onClick={() => { push({ title: 'Order marked completed', tone: 'success' }); setActive(null) }}>
+              {active.status !== 'Completed' && (
+                <Button
+                  icon="Check"
+                  disabled={mutating || !can('manager')}
+                  title={can('manager') ? 'Mark completed' : 'Requires manager role'}
+                  onClick={() => void setStatus(active.id, 'Completed')}
+                >
                   Mark as completed
+                </Button>
+              )}
+              {active.status !== 'Cancelled' && (
+                <Button
+                  variant="secondary"
+                  icon="XCircle"
+                  disabled={mutating || !can('manager')}
+                  title={can('manager') ? 'Cancel order' : 'Requires manager role'}
+                  onClick={() => void setStatus(active.id, 'Cancelled')}
+                >
+                  Cancel order
                 </Button>
               )}
             </>
@@ -308,90 +392,101 @@ export default function Orders() {
       >
         {active && (
           <div className="space-y-4 p-5">
-            {/* Receipt */}
-            <div className="rounded-2xl border border-line bg-white p-5">
-              <div className="flex items-start justify-between gap-4 border-b border-dashed border-line pb-4">
-                <div>
-                  <p className="font-display text-[16px] font-semibold text-ink">Maison Ember</p>
-                  <p className="text-[12px] text-ink-muted">{active.location}</p>
+            {detailLoading && !detail && <PageLoader label="Loading order lines…" />}
+            {detail && (
+              <div className="rounded-2xl border border-line bg-white p-5">
+                <div className="flex items-start justify-between gap-4 border-b border-dashed border-line pb-4">
+                  <div>
+                    <p className="font-display text-[16px] font-semibold text-ink">DineIQ Analytics</p>
+                    <p className="text-[12px] text-ink-muted">{detail.order.restaurant_name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-[13px] font-bold text-ink">{detail.order.order_id}</p>
+                    <p className="text-[12px] text-ink-muted">
+                      {detail.order.order_datetime.slice(0, 16)} · {detail.order.channel}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-mono text-[13px] font-bold text-ink">{active.number}</p>
-                  <p className="text-[12px] text-ink-muted">
-                    {active.time} · {active.table ?? active.channel}
+
+                <div className="mt-4 space-y-2.5">
+                  {detail.lines.map((l) => (
+                    <div key={l.item_id} className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-semibold text-ink">
+                          {l.quantity} × {l.item_name}
+                        </p>
+                        {l.discount_pct > 0 && (
+                          <p className="text-[12px] italic text-ink-muted">
+                            {Math.round(l.discount_pct * 100)}% promo discount
+                          </p>
+                        )}
+                      </div>
+                      <span className="shrink-0 text-[13px] font-semibold tabular-nums text-ink">{pkr(l.line_total)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 space-y-1.5 border-t border-dashed border-line pt-3">
+                  <div className="flex items-baseline justify-between pt-1">
+                    <span className="text-[14px] font-semibold text-ink">Total</span>
+                    <span className="font-display text-[20px] font-semibold text-ink">{pkr(detail.order.total_amount)}</span>
+                  </div>
+                  <p className="pt-1 text-[12px] text-ink-muted">
+                    {detail.order.promotion_id ? `Promo ${detail.order.promotion_id}` : 'No promo'} · {detail.order.status}
                   </p>
                 </div>
               </div>
-
-              <div className="mt-4 space-y-2.5">
-                {active.items.map((i, idx) => (
-                  <div key={idx} className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-semibold text-ink">
-                        {i.qty} × {i.name}
-                      </p>
-                      {i.notes && <p className="text-[12px] italic text-ink-muted">“{i.notes}”</p>}
-                    </div>
-                    <span className="shrink-0 text-[13px] font-semibold tabular-nums text-ink">{pkr(i.price * i.qty)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 space-y-1.5 border-t border-dashed border-line pt-3">
-                <div className="flex justify-between text-[13px] text-ink-muted">
-                  <span>Subtotal</span>
-                  <span>{pkr(active.total - 150)}</span>
-                </div>
-                {active.channel !== 'Dine-in' && (
-                  <div className="flex justify-between text-[13px] text-ink-muted">
-                    <span>Delivery fee</span>
-                    <span>{pkr(150)}</span>
-                  </div>
-                )}
-                <div className="flex items-baseline justify-between pt-1">
-                  <span className="text-[14px] font-semibold text-ink">Total</span>
-                  <span className="font-display text-[20px] font-semibold text-ink">{pkr(active.total)}</span>
-                </div>
-                <p className="pt-1 text-[12px] text-ink-muted">
-                  {active.payment} · {active.paymentMethod}
-                </p>
-              </div>
-            </div>
+            )}
 
             {/* Customer */}
             <div className="rounded-2xl border border-line bg-white p-4">
               <p className="text-[11.5px] font-bold uppercase tracking-wide text-ink-faint">Customer</p>
-              <p className="mt-1.5 text-[14px] font-semibold text-ink">{active.customer}</p>
-              <p className="text-[13px] text-ink-muted">{active.phone}</p>
-              {active.address && <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">{active.address}</p>}
-              <div className="mt-3 flex gap-2">
-                <Button size="xs" variant="secondary" icon="Phone">
-                  Call customer
-                </Button>
-                <Button size="xs" variant="ghost" icon="MessageSquare">
-                  Message
-                </Button>
+              <p className="mt-1.5 font-mono text-[14px] font-semibold text-ink">{active.customer}</p>
+              {customer ? (
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[12.5px]">
+                  <div className="rounded-lg bg-canvas px-2.5 py-2">
+                    <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">Segment</p>
+                    <p className="font-semibold text-ink">{customer.profile.segment}</p>
+                  </div>
+                  <div className="rounded-lg bg-canvas px-2.5 py-2">
+                    <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">RFM</p>
+                    <p className="font-semibold text-ink">
+                      {customer.profile.RFM} · {customer.profile.frequency} orders
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-1.5 text-[13px] text-ink-muted">Guest or unprofiled customer.</p>
+              )}
+              <div className="mt-3">
+                <Link to="/admin/customers">
+                  <Button size="xs" variant="secondary" icon="Users">
+                    Open customer analytics
+                  </Button>
+                </Link>
               </div>
             </div>
 
-            {/* Timeline */}
-            <div className="rounded-2xl border border-line bg-white p-4">
-              <p className="text-[11.5px] font-bold uppercase tracking-wide text-ink-faint">Status timeline</p>
-              <ol className="mt-3 space-y-3">
-                {['Order received', 'Confirmed', 'Preparing', active.channel === 'Dine-in' ? 'Served' : 'Out for delivery', 'Completed'].map((s, i) => {
-                  const reached = ['Order received', 'Confirmed'].includes(s) || (active.status === 'Preparing' && i <= 2) || active.status === 'Completed'
-                  return (
-                    <li key={s} className="flex items-center gap-3">
-                      <span className={cn('flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold', reached ? 'bg-sage-600 text-white' : 'bg-line text-ink-muted')}>
-                        {reached ? <Icon name="Check" size={12} /> : i + 1}
-                      </span>
-                      <span className={cn('text-[13px]', reached ? 'font-medium text-ink' : 'text-ink-faint')}>{s}</span>
-                    </li>
-                  )
-                })}
-              </ol>
-              <p className="mt-3 text-[11.5px] text-ink-faint">Static demo timeline — no live order tracking.</p>
-            </div>
+            {/* Fulfilment */}
+            {detail && (
+              <div className="rounded-2xl border border-line bg-white p-4">
+                <p className="text-[11.5px] font-bold uppercase tracking-wide text-ink-faint">Fulfilment</p>
+                <dl className="mt-2 space-y-1.5 text-[13px]">
+                  {[
+                    ['Channel', detail.order.channel],
+                    ['Branch', detail.order.restaurant_name],
+                    ['Promotion', detail.order.promotion_id ?? 'None'],
+                    ['Line items', String(detail.lines.length)],
+                    ['Status', detail.order.status],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-3">
+                      <dt className="text-ink-muted">{k}</dt>
+                      <dd className="font-semibold text-ink">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
           </div>
         )}
       </Drawer>

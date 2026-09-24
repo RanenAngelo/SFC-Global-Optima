@@ -174,7 +174,10 @@ def list_orders(page: int = 1, page_size: int = 20, status: str | None = None,
         params["st"] = status
     where = " AND ".join(conds)
     total = deps.q(f"SELECT COUNT(*) n FROM orders o WHERE {where}", params)[0]["n"]
-    rows = deps.q(f"""SELECT o.*, r.restaurant_name FROM orders o
+    rows = deps.q(f"""SELECT o.*, r.restaurant_name,
+        (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.order_id) AS lines_n,
+        (SELECT COALESCE(SUM(quantity), 0) FROM order_items oi WHERE oi.order_id = o.order_id) AS items_qty
+        FROM orders o
         JOIN restaurants r ON o.restaurant_id = r.restaurant_id WHERE {where}
         ORDER BY o.order_datetime DESC LIMIT :lim OFFSET :off""",
                   {**params, "lim": page_size, "off": (page - 1) * page_size})

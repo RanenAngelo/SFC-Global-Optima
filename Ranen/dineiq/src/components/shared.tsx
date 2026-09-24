@@ -411,7 +411,7 @@ export function DemoNote({ children, className }: { children: React.ReactNode; c
 /** Live-data disclosure strip: replaces DemoNote once a view is API-wired. */
 export function LiveNote({ children, className }: { children?: React.ReactNode; className?: string }) {
   const { options } = useMeta()
-  const max = (options?.date_range?.max as string | undefined)?.slice(0, 10)
+  const max = (options?.date_range?.dmax as string | undefined)?.slice(0, 10)
   return (
     <div className={cn('flex items-start gap-2.5 rounded-xl border border-sage-100 bg-sage-50/70 px-3.5 py-2.5 text-[12px] leading-relaxed text-sage-700', className)}>
       <Icon name="Activity" size={14} className="mt-px shrink-0" />
@@ -431,7 +431,7 @@ export function LiveBanner() {
   const [open, setOpen] = useState(true)
   const { options } = useMeta()
   if (!open) return null
-  const max = (options?.date_range?.max as string | undefined)?.slice(0, 10)
+  const max = (options?.date_range?.dmax as string | undefined)?.slice(0, 10)
   return (
     <div className="relative z-40 bg-ink px-4 py-2 text-center text-[12px] font-medium text-white/85">
       <span className="mr-2 inline-flex items-center gap-1.5 rounded-full bg-sage-500/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">

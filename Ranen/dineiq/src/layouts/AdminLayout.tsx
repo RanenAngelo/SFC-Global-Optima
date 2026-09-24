@@ -165,7 +165,7 @@ export default function AdminLayout() {
             </div>
             <p className="mt-1.5 text-[11.5px] leading-snug text-ink-muted">
               {meta
-                ? `${meta.restaurants.length} branches · data through ${fmtDate((meta.date_range.max as string).slice(0, 10), { withYear: true })}`
+                ? `${meta.restaurants.length} branches · data through ${fmtDate((meta.date_range.dmax as string).slice(0, 10), { withYear: true })}`
                 : 'Connecting to the DineIQ API…'}
             </p>
           </div>

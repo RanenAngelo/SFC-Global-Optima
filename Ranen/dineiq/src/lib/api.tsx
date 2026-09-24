@@ -200,7 +200,7 @@ export type FilterOptions = {
   channels: string[]
   categories: { category_id: string; category_name: string }[]
   statuses?: string[]
-  date_range: { min: string; max: string }
+  date_range: { dmin: string; dmax: string }
   [k: string]: unknown
 }
 
@@ -289,7 +289,7 @@ export type ApiFilters = {
 export function useApiFilters(): ApiFilters {
   const { location, range, rangeLabel } = useWorkspace()
   const { options } = useMeta()
-  const anchorMax = (options?.date_range?.max as string | undefined)?.slice(0, 10) ?? DATA_MAX_FALLBACK
+  const anchorMax = (options?.date_range?.dmax as string | undefined)?.slice(0, 10) ?? DATA_MAX_FALLBACK
   const { from, to } = rangeToDates(range, anchorMax)
   return useMemo(
     () => ({

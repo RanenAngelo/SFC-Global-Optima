@@ -4,35 +4,40 @@ import { Badge, Button, Card, CardHeader, Icon, Tabs, cn } from '../../component
 import { ChartCard, DonutChart, Sparkline, TrendChart, defaultCurrencyFormat } from '../../components/charts'
 import { KpiCard, MetricRow, StatusDot } from '../../components/shared'
 import { PageHeader } from '../../components/admin/PageHeader'
-import {
-  CATEGORY_REVENUE, CHANNEL_MIX, DEMO_NOTE, KPIS, LOCATIONS, MENU_PERFORMANCE_DIST, ORDERS_BY_HOUR,
-  RECENT_ALERTS, REVENUE_SERIES, TOP_SELLERS, ADMIN_ORDERS, RECOMMENDATIONS,
-} from '../../lib/data/analytics'
-import { pkr } from '../../lib/utils'
+import { num, pkr } from '../../lib/utils'
 import { FoodImage } from '../../components/shared'
-import { useWorkspace } from '../../store/app'
+import { PageError, PageLoader, fmtDate, useApiFilters, useAuth } from '../../lib/api'
+import { useOverviewData } from '../../lib/live'
 
 export default function Overview() {
   const [trend, setTrend] = useState('revenue')
-  const { rangeLabel, location } = useWorkspace()
+  const { user } = useAuth()
+  const { rangeLabel } = useApiFilters()
+  const { data, loading, error, refetch } = useOverviewData()
+  if (loading) return <PageLoader />
+  if (error || !data) return <PageError message={error ?? 'No overview data.'} onRetry={refetch} />
+  const {
+    KPIS, REVENUE_SERIES, CHANNEL_MIX, channelOrders, CATEGORY_REVENUE, ORDERS_BY_HOUR, hoursSample,
+    TOP_SELLERS, MENU_PERFORMANCE_DIST, classTotal, LOCATIONS, ADMIN_ORDERS, RECENT_ALERTS, RECOMMENDATIONS,
+    branchCount, dataMax,
+  } = data
 
   const series =
     trend === 'revenue'
-      ? [
-          { key: 'revenue', label: 'Revenue', color: '#B54E17', type: 'area' as const },
-          { key: 'profit', label: 'Gross profit', color: '#5E8C4A', type: 'line' as const },
-        ]
+      ? [{ key: 'revenue', label: 'Revenue', color: '#B54E17', type: 'area' as const }]
       : [{ key: 'orders', label: 'Orders', color: '#2F6FA8', type: 'area' as const }]
 
   const topProfit = [...TOP_SELLERS].sort((a, b) => b.margin - a.margin).slice(0, 5)
+  const maxLocRev = Math.max(1, ...LOCATIONS.map((l) => l.revenue))
 
   return (
     <div>
       <PageHeader
-        eyebrow="Maison Ember · 3 branches"
+        eyebrow={`DineIQ Analytics · ${branchCount} branches`}
         title="Restaurant Overview"
-        subtitle={`Welcome back, Zohaib. Here is how Maison Ember performed ${rangeLabel.toLowerCase()}. Every figure on this page is a static demo value.`}
-        demoNote={DEMO_NOTE}
+        subtitle={`Welcome back, ${user?.username ?? 'operator'}. Here is how the chain performed ${rangeLabel.toLowerCase()} — live from the DineIQ API.`}
+        demoNote={`Live figures · data through ${dataMax ? fmtDate(dataMax, { withYear: true }) : '—'} · every value recalculates with the filters above.`}
+        onRefresh={refetch}
         actions={
           <Tabs
             value={rangeLabel}
@@ -69,7 +74,7 @@ export default function Overview() {
       <div className="mt-5 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
         <ChartCard
           title="Revenue trend"
-          subtitle="Daily revenue and gross profit — demo series"
+          subtitle="Daily revenue and orders — live series"
           height={300}
           actions={
             <Tabs
@@ -82,7 +87,7 @@ export default function Overview() {
               ]}
             />
           }
-          footer={`Illustrative 30-day series · ${rangeLabel}`}
+          footer={`Live daily series · ${rangeLabel}`}
         >
           <TrendChart
             data={REVENUE_SERIES}
@@ -92,10 +97,10 @@ export default function Overview() {
           />
         </ChartCard>
 
-        <ChartCard title="Sales by ordering channel" subtitle="Share of revenue — demo split" height={300}>
+        <ChartCard title="Sales by ordering channel" subtitle="Share of revenue — live split" height={300}>
           <DonutChart
             data={CHANNEL_MIX}
-            centerValue="4,286"
+            centerValue={num(channelOrders)}
             centerLabel="Orders"
             valueFormat={(v) => `${v}%`}
           />
@@ -106,7 +111,7 @@ export default function Overview() {
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <ChartCard
           title="Revenue by category"
-          subtitle="Revenue and units sold — demo values"
+          subtitle="Revenue by category — live values"
           height={288}
           footer="Margin shown on the menu intelligence page."
         >
@@ -115,13 +120,12 @@ export default function Overview() {
             xKey="category"
             series={[
               { key: 'revenue', label: 'Revenue', color: '#B54E17', type: 'bar' },
-              { key: 'units', label: 'Units sold', color: '#C08A16', type: 'line' },
             ]}
-            valueFormat={(v, name) => (name === 'Revenue' ? pkr(v, { compact: true }) : `${v} units`)}
+            valueFormat={(v) => pkr(v, { compact: true })}
           />
         </ChartCard>
 
-        <ChartCard title="Peak ordering hours" subtitle="Orders by hour of day — demo distribution" height={288}>
+        <ChartCard title="Peak ordering hours" subtitle="Orders by hour of day — live distribution" height={288} footer={`Hour-of-day shape · ${num(hoursSample)} orders in range`}>
           <TrendChart
             data={ORDERS_BY_HOUR}
             xKey="hour"
@@ -137,7 +141,7 @@ export default function Overview() {
         <Card>
           <CardHeader
             title="Top-selling dishes"
-            subtitle="By units sold — demo values"
+            subtitle="By units sold — live"
             actions={
               <Link to="/admin/menu-intelligence">
                 <Button size="xs" variant="ghost" iconRight="ArrowRight">
@@ -157,9 +161,11 @@ export default function Overview() {
                     {d.units} units · {pkr(d.revenue, { compact: true })}
                   </p>
                 </div>
-                <div className="hidden sm:block">
-                  <Sparkline values={[42, 48, 51, 49, 56, 58, 61, d.units / 10]} color="#B54E17" width={70} />
-                </div>
+                {d.spark.length > 1 && (
+                  <div className="hidden sm:block">
+                    <Sparkline values={d.spark} color="#B54E17" width={70} />
+                  </div>
+                )}
                 <span className="w-14 shrink-0 text-right text-[13px] font-bold tabular-nums text-ink">{d.margin}%</span>
               </div>
             ))}
@@ -167,7 +173,7 @@ export default function Overview() {
         </Card>
 
         <Card>
-          <CardHeader title="Highest-profit dishes" subtitle="By contribution margin — demo values" />
+          <CardHeader title="Highest-profit dishes" subtitle="By contribution margin — live" />
           <div className="divide-y divide-line">
             {topProfit.map((d, i) => (
               <div key={d.name} className="flex items-center gap-3.5 px-4 py-3 sm:px-5">
@@ -190,17 +196,17 @@ export default function Overview() {
       <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1.4fr]">
         <ChartCard
           title="Menu performance distribution"
-          subtitle="Static demonstration classifications"
+          subtitle="Live pipeline classifications"
           height={270}
-          footer="These classifications are demonstration labels, not model output."
+          footer="Classified by the menu-intelligence pipeline."
         >
-          <DonutChart data={MENU_PERFORMANCE_DIST} valueFormat={(v) => `${v}%`} centerValue="39" centerLabel="Items" />
+          <DonutChart data={MENU_PERFORMANCE_DIST} valueFormat={(v) => `${v}%`} centerValue={String(classTotal)} centerLabel="Items" />
         </ChartCard>
 
         <Card>
           <CardHeader
             title="Location performance"
-            subtitle="Demo comparison across three branches"
+            subtitle="Live comparison across top branches"
             actions={
               <Link to="/admin/locations">
                 <Button size="xs" variant="ghost" iconRight="ArrowRight">
@@ -234,7 +240,7 @@ export default function Overview() {
                 </div>
                 <div className="mt-2.5 flex items-center gap-2">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
-                    <div className="h-full rounded-full bg-ember-500" style={{ width: `${(l.revenue / 600000) * 100}%` }} />
+                    <div className="h-full rounded-full bg-ember-500" style={{ width: `${(l.revenue / maxLocRev) * 100}%` }} />
                   </div>
                   <span className={cn('text-[11.5px] font-semibold', l.trend >= 0 ? 'text-sage-600' : 'text-clay-600')}>
                     {l.trend >= 0 ? '+' : ''}
@@ -252,7 +258,7 @@ export default function Overview() {
         <Card>
           <CardHeader
             title="Recent orders"
-            subtitle="Latest demo orders across all channels"
+            subtitle="Latest live orders across all channels"
             actions={
               <Link to="/admin/orders">
                 <Button size="xs" variant="ghost" iconRight="ArrowRight">
@@ -298,7 +304,7 @@ export default function Overview() {
         <Card>
           <CardHeader
             title="Recent alerts"
-            subtitle="Static demo alerts"
+            subtitle="Live anomaly alerts"
             actions={
               <Link to="/admin/anomalies">
                 <Button size="xs" variant="ghost" iconRight="ArrowRight">
@@ -337,7 +343,7 @@ export default function Overview() {
         <Card>
           <CardHeader
             title="Business recommendations"
-            subtitle="Illustrative recommendations — not generated by a live system"
+            subtitle="Live pipeline recommendations"
             actions={
               <Link to="/admin/recommendations">
                 <Button size="xs" variant="ghost" iconRight="ArrowRight">

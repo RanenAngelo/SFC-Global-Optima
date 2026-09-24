@@ -1,0 +1,104 @@
+[
+  {
+    "name": "spark_hv_logreg",
+    "version": "1.0",
+    "pipeline": "spark",
+    "task": "high_value_customer",
+    "trained_at": "2026-09-24T11:56:23.050990",
+    "train_range": "hash-split train60/valid20/test20 of 1941 train rows",
+    "params": {
+      "algorithm": "logreg"
+    },
+    "metrics": {
+      "accuracy": 0.8816,
+      "f1": 0.8464,
+      "auc": 0.806,
+      "n_test": 566
+    },
+    "artifact_path": "models/spark_hv_logreg"
+  },
+  {
+    "name": "spark_hv_logreg",
+    "version": "1.0",
+    "pipeline": "spark",
+    "task": "high_value_customer",
+    "trained_at": "2026-09-24T11:57:19.225648",
+    "train_range": "hash-split train60/valid20/test20 of 1941 train rows",
+    "params": {
+      "algorithm": "logreg"
+    },
+    "metrics": {
+      "accuracy": 0.8816,
+      "f1": 0.8464,
+      "auc": 0.806,
+      "n_test": 566
+    },
+    "artifact_path": "models/spark_hv_logreg"
+  },
+  {
+    "name": "spark_demand_random_forest",
+    "version": "1.0",
+    "pipeline": "spark",
+    "task": "demand_forecast",
+    "trained_at": "2026-09-24T11:57:29.213102",
+    "train_range": "train <= max-28d (11 rows)",
+    "params": {
+      "algorithm": "random_forest"
+    },
+    "metrics": {
+      "rmse": 1.0319,
+      "mae": 0.8666,
+      "r2": -0.5736
+    },
+    "artifact_path": "models/spark_demand_random_forest"
+  },
+  {
+    "name": "py_hv_logreg",
+    "version": "1.0",
+    "pipeline": "python",
+    "task": "high_value_customer",
+    "trained_at": "2026-09-24T11:57:54.580016",
+    "train_range": "train 1997 / valid 633 / test 566 (shared unseen test IDs)",
+    "params": {
+      "algorithm": "logreg"
+    },
+    "metrics": {
+      "accuracy": 0.7898,
+      "precision": 0.3262,
+      "recall": 0.6571,
+      "f1": 0.436,
+      "auc": 0.795,
+      "n_test": 566,
+      "confusion_matrix": [
+        [
+          401,
+          95
+        ],
+        [
+          24,
+          46
+        ]
+      ]
+    },
+    "artifact_path": "models/py_hv_logreg.joblib"
+  },
+  {
+    "name": "py_demand_histgb",
+    "version": "1.0",
+    "pipeline": "python",
+    "task": "demand_forecast",
+    "trained_at": "2026-09-24T11:57:59.869791",
+    "train_range": "train <= 2026-08-27 (11 rows)",
+    "params": {
+      "algorithm": "histgb"
+    },
+    "metrics": {
+      "rmse": 0.8926,
+      "mae": 0.7645,
+      "mape": 62.25,
+      "mape_coverage": 1.0,
+      "r2": -0.1775
+    },
+    "artifact_path": "models/py_demand_histgb.joblib"
+  }
+]

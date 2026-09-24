@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.VectorAssembler","timestamp":1790251048353,"sparkVersion":"3.5.9","uid":"VectorAssembler_be6a818cccdd","paramMap":{"outputCol":"features","inputCols":["dow","month","is_weekend","trend_idx","lag_7","lag_14","lag_28","roll_7","roll_28"]},"defaultParamMap":{"outputCol":"VectorAssembler_be6a818cccdd__output","handleInvalid":"error"}}

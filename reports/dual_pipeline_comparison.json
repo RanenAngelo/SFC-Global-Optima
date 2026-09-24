@@ -1,0 +1,29 @@
+{
+  "customer": {
+    "n_unseen": 566,
+    "agreement_pct": 77.74,
+    "disagreements": 126,
+    "spark_test": {
+      "accuracy": 0.8816,
+      "macro_f1": 0.5739,
+      "auc": 0.806
+    },
+    "python_test": {
+      "accuracy": 0.7898,
+      "macro_f1": 0.6534,
+      "auc": 0.795
+    },
+    "majority_baseline_accuracy": 0.8763,
+    "both_wrong": 30,
+    "explanation": "Both models train independently (Spark MLlib vs sklearn) on equivalent behavioral features with a shared unseen test set. Disagreements cluster on borderline customers (medium frequency/monetary between loyal and occasional bands) where the two algorithms' decision boundaries differ; regularization (Spark elastic-net vs sklearn balanced weights) shifts probability calibration, visible in proba_diff. Neither pipeline sees the other's predictions."
+  },
+  "demand": {
+    "n_unseen": 144,
+    "spark_mae": 0.8666,
+    "python_mae": 0.7645,
+    "pred_vs_pred_mae": 0.4035,
+    "pred_vs_pred_corr": NaN,
+    "within_1_unit_pct": 99.31,
+    "explanation": "Both regressors train independently (MLlib RandomForest vs sklearn HistGB) on equivalent lag/rolling features over the same chronological test cells. Residual gaps come from different tree ensembles and sparsity handling; sparse (item, restaurant, day) cells dominate the error mass on both sides."
+  }
+}

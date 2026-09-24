@@ -1,0 +1,81 @@
+{
+  "high_value_customer": {
+    "algorithms": {
+      "logreg": {
+        "accuracy": 0.7773,
+        "precision": 0.3408,
+        "recall": 0.7262,
+        "f1": 0.4639,
+        "auc": 0.814
+      },
+      "random_forest": {
+        "accuracy": 0.8167,
+        "precision": 0.3667,
+        "recall": 0.5238,
+        "f1": 0.4314,
+        "auc": 0.8011
+      },
+      "histgb": {
+        "accuracy": 0.8373,
+        "precision": 0.3855,
+        "recall": 0.381,
+        "f1": 0.3832,
+        "auc": 0.7346
+      }
+    },
+    "selected": "logreg",
+    "test": {
+      "accuracy": 0.7898,
+      "precision": 0.3262,
+      "recall": 0.6571,
+      "f1": 0.436,
+      "auc": 0.795,
+      "n_test": 566,
+      "confusion_matrix": [
+        [
+          401,
+          95
+        ],
+        [
+          24,
+          46
+        ]
+      ]
+    }
+  },
+  "demand": {
+    "algorithms": {
+      "baseline_naive7": {
+        "rmse": 1.2611,
+        "mae": 0.8958,
+        "mape": 62.16,
+        "mape_coverage": 1.0,
+        "r2": -1.3502
+      },
+      "ridge": {
+        "rmse": 1.3653,
+        "mae": 1.0536,
+        "mape": 76.33,
+        "mape_coverage": 1.0,
+        "r2": -1.755
+      },
+      "random_forest": {
+        "rmse": 1.1363,
+        "mae": 0.938,
+        "mape": 71.13,
+        "mape_coverage": 1.0,
+        "r2": -0.9081
+      },
+      "histgb": {
+        "rmse": 0.8926,
+        "mae": 0.7645,
+        "mape": 62.25,
+        "mape_coverage": 1.0,
+        "r2": -0.1775
+      }
+    },
+    "selected": "histgb",
+    "n_test": 144,
+    "max_date": "2026-09-24"
+  }
+}

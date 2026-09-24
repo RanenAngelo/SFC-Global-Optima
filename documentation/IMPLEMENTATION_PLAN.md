@@ -16,17 +16,17 @@ Rule: implement in this exact order; each step is COMPLETE only when implemented
 | 9 | Menu Profitability Analysis (10 dimensions; volume alone ≠ success) | ✅ COMPLETE |
 | 10 | Menu Performance Classification (Profit/Volume Driver, Hidden Opportunity, Low Performer; data-driven) | ✅ COMPLETE |
 | 11 | Tricky Menu Performance Cases (10 difficult scenarios handled) | ✅ COMPLETE |
-| 12 | Spark MLlib Model Development (≥3 algorithms trained & compared) | PENDING |
-| 13 | Independent Python Data Science Pipeline (same records, no Spark-result reuse) | PENDING |
-| 14 | Dual-Pipeline Result Verification (comparison report + agreement %) | PENDING |
+| 12 | Spark MLlib Model Development (≥3 algorithms trained & compared) | ✅ COMPLETE |
+| 13 | Independent Python Data Science Pipeline (same records, no Spark-result reuse) | ✅ COMPLETE |
+| 14 | Dual-Pipeline Result Verification (comparison report + agreement %) | ✅ COMPLETE |
 | 15 | Customer Segmentation (behavioral; 6 suggested segments) | PENDING |
 | 16 | RFM Analysis (Recency/Frequency/Monetary per customer) | PENDING |
 | 17 | Market-Basket Analysis (Support/Confidence/Lift) | PENDING |
 | 18 | Bundle and Cross-Sell Recommendations (association-rule evidence) | PENDING |
 | 19 | Peak-Period Analysis (hours/days/weekend/monthly/seasonal/location/channel) | PENDING |
 | 20 | Demand Forecasting (items/categories/locations; configurable horizons) | PENDING |
-| 21 | Time-Aware Model Validation (chronological split, no leakage) | PENDING |
-| 22 | Forecast Accuracy Evaluation (MAE/RMSE/MAPE/R²) | PENDING |
+| 21 | Time-Aware Model Validation (chronological split, no leakage) | ✅ COMPLETE |
+| 22 | Forecast Accuracy Evaluation (MAE/RMSE/MAPE/R²) | ✅ COMPLETE |
 | 23 | Wastage Analysis (9 breakdown dimensions) | PENDING |
 | 24 | Wastage Risk Prediction (9 candidate predictors) | PENDING |
 | 25 | Price Intelligence (price/demand/revenue/margin/discount/rating/repeat) | PENDING |

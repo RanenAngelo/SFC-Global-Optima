@@ -1,0 +1,12 @@
+{
+  "locations": 20,
+  "top_location": "R003",
+  "class_mix": {
+    "Low Performer": 1283,
+    "Hidden Opportunity": 713,
+    "Volume Driver": 500,
+    "Profit Driver": 489
+  },
+  "location_class_rows": 2985,
+  "differ_from_global": 875
+}

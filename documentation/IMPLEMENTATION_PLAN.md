@@ -33,14 +33,14 @@ Rule: implement in this exact order; each step is COMPLETE only when implemented
 | 26 | Price-Sensitivity Analysis (Highly/Moderately/Low) | ✅ COMPLETE |
 | 27 | Promotion Effectiveness Analysis (8 measures; sales ≠ success) | ✅ COMPLETE |
 | 28 | Promotion Trap Detection (5 misleading patterns) | ✅ COMPLETE |
-| 29 | Rating and Satisfaction Analysis (ratings vs 7 dimensions) | PENDING |
-| 30 | Rating Anomaly Detection (5 unusual patterns) | PENDING |
-| 31 | Sales Anomaly Detection (6 unusual event types) | PENDING |
-| 32 | Slow-Moving Dish Detection (7 combined signals) | PENDING |
-| 33 | Multi-Location Intelligence (9 comparison metrics) | PENDING |
-| 34 | Location-Specific Menu Performance (per-location 4-class) | PENDING |
-| 35 | Ordering Channel Analysis (channels × 7 comparisons) | PENDING |
-| 36 | Customer Churn-Risk Identification (5 factors) | PENDING |
+| 29 | Rating and Satisfaction Analysis (ratings vs 7 dimensions) | ✅ COMPLETE |
+| 30 | Rating Anomaly Detection (5 unusual patterns) | ✅ COMPLETE |
+| 31 | Sales Anomaly Detection (6 unusual event types) | ✅ COMPLETE |
+| 32 | Slow-Moving Dish Detection (7 combined signals) | ✅ COMPLETE |
+| 33 | Multi-Location Intelligence (9 comparison metrics) | ✅ COMPLETE |
+| 34 | Location-Specific Menu Performance (per-location 4-class) | ✅ COMPLETE |
+| 35 | Ordering Channel Analysis (channels × 7 comparisons) | ✅ COMPLETE |
+| 36 | Customer Churn-Risk Identification (5 factors) | ✅ COMPLETE |
 | 37 | Recommendation Engine (9 evidence-based recommendation types) | PENDING |
 | 38 | Recommendation Evidence (every recommendation explained) | PENDING |
 | 39 | Recommendation Priority (Low/Medium/High/Critical by business impact) | PENDING |

@@ -1,0 +1,15 @@
+{
+  "anomalies": 409,
+  "by_category": {
+    "high_order_value": 329,
+    "sales_spike": 79,
+    "identical_burst": 1
+  },
+  "by_severity": {
+    "medium": 329,
+    "high": 48,
+    "critical": 32
+  },
+  "residual_duplicate_order_rows": 0,
+  "residual_duplicate_line_rows": 0
+}

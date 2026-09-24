@@ -1,0 +1,56 @@
+{
+  "channels": [
+    {
+      "channel": "Dine-in",
+      "orders": 3369,
+      "revenue": 202588.36,
+      "profit": 104047.0,
+      "avg_discount": 0.00648680924981001,
+      "promo_share": 0.024318749321463468,
+      "aov": 60.13,
+      "basket_size": 2.73,
+      "margin_pct": 51.36,
+      "peak_hour": 12,
+      "top_category": "Main Course"
+    },
+    {
+      "channel": "Takeaway",
+      "orders": 1820,
+      "revenue": 107830.62,
+      "profit": 55227.38,
+      "avg_discount": 0.005090135709945311,
+      "promo_share": 0.01985011140368645,
+      "aov": 59.25,
+      "basket_size": 2.71,
+      "margin_pct": 51.22,
+      "peak_hour": 13,
+      "top_category": "Main Course"
+    },
+    {
+      "channel": "Third-Party Delivery",
+      "orders": 1502,
+      "revenue": 87278.41,
+      "profit": 44972.11,
+      "avg_discount": 0.006380475594493116,
+      "promo_share": 0.025031289111389236,
+      "aov": 58.11,
+      "basket_size": 2.66,
+      "margin_pct": 51.53,
+      "peak_hour": 11,
+      "top_category": "Main Course"
+    },
+    {
+      "channel": "Website/App",
+      "orders": 1779,
+      "revenue": 104450.59,
+      "profit": 53772.92,
+      "avg_discount": 0.0060004230118443315,
+      "promo_share": 0.02284263959390863,
+      "aov": 58.71,
+      "basket_size": 2.66,
+      "margin_pct": 51.48,
+      "peak_hour": 14,
+      "top_category": "Main Course"
+    }
+  ]
+}

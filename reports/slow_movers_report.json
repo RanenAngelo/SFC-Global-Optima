@@ -1,0 +1,216 @@
+{
+  "items": 159,
+  "slow_moving": 35,
+  "slow_items": [
+    {
+      "item_id": "M0011",
+      "item_name": "Chicken Samosas",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0013",
+      "item_name": "Spicy Spring Rolls",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0021",
+      "item_name": "Tomato Basil Soup",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0023",
+      "item_name": "Lentil Soup",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0024",
+      "item_name": "Seafood Chowder",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0026",
+      "item_name": "Spicy Chicken Corn Soup",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0030",
+      "item_name": "Grilled-Style Lentil Soup",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0031",
+      "item_name": "Spicy Seafood Chowder",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0034",
+      "item_name": "Quinoa Bowl",
+      "signals": 4,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0039",
+      "item_name": "Stuffed Bell Peppers",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0043",
+      "item_name": "Chef's Special Garden Salad",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0047",
+      "item_name": "Beef Steak",
+      "signals": 4,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0049",
+      "item_name": "Lamb Chops",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0050",
+      "item_name": "Butter Chicken",
+      "signals": 4,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0061",
+      "item_name": "Chef's Special Lamb Chops",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0062",
+      "item_name": "Grilled-Style Butter Chicken",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0069",
+      "item_name": "Mushroom Ravioli",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0077",
+      "item_name": "Grilled-Style Creamy Risotto",
+      "signals": 4,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0085",
+      "item_name": "Paneer Tikka Pizza",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0096",
+      "item_name": "Veggie Burger",
+      "signals": 4,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0100",
+      "item_name": "Classic Chicken Burger",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0101",
+      "item_name": "Family-Size Zinger Burger",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0104",
+      "item_name": "Spicy Smoky BBQ Burger",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0106",
+      "item_name": "Cheesecake",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0110",
+      "item_name": "Chocolate Brownie",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0116",
+      "item_name": "Chef's Special Ice Cream Sundae",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0126",
+      "item_name": "Mint Margarita (Mocktail)",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0128",
+      "item_name": "Classic Iced Tea",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0140",
+      "item_name": "Spicy French Fries",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0141",
+      "item_name": "Classic Garlic Naan",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0142",
+      "item_name": "Family-Size Coleslaw",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0145",
+      "item_name": "Spicy Grilled Vegetables",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0155",
+      "item_name": "Chef's Special Butter Garlic Prawns",
+      "signals": 6,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0158",
+      "item_name": "Truffle Beef Sliders",
+      "signals": 4,
+      "performance_class": "Low Performer"
+    },
+    {
+      "item_id": "M0160",
+      "item_name": "Matcha Cheesecake",
+      "signals": 5,
+      "performance_class": "Low Performer"
+    }
+  ]
+}

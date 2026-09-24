@@ -1,0 +1,10 @@
+{
+  "customers": 3196,
+  "bands": {
+    "medium": 1245,
+    "low": 1008,
+    "critical": 522,
+    "high": 421
+  },
+  "high_value_at_risk": 35
+}

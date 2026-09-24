@@ -1,0 +1,16 @@
+{
+  "ratings": 5942,
+  "overall_avg": 3.948,
+  "distribution": {
+    "1": 2,
+    "2": 83,
+    "3": 1364,
+    "4": 3265,
+    "5": 1228
+  },
+  "locations": 20,
+  "rating_anomalies": 1,
+  "anomaly_kinds": {
+    "identical_burst": 1
+  }
+}

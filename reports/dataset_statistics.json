@@ -1,0 +1,218 @@
+{
+  "data_dir": "/home/user/SFC-Global-Optima/Ranen",
+  "tables": {
+    "Restaurants": {
+      "rows": 20,
+      "columns": [
+        "restaurant_id",
+        "restaurant_name",
+        "city",
+        "region",
+        "restaurant_type",
+        "opening_date",
+        "performance_tier"
+      ],
+      "missing_columns": []
+    },
+    "Menu_Categories": {
+      "rows": 11,
+      "columns": [
+        "category_id",
+        "category_name"
+      ],
+      "missing_columns": []
+    },
+    "Menu_Items": {
+      "rows": 160,
+      "columns": [
+        "item_id",
+        "item_name",
+        "category_id",
+        "base_cost",
+        "base_price",
+        "is_active",
+        "introduced_date",
+        "demand_tier",
+        "wastage_tag",
+        "price_sensitivity_tag",
+        "seasonal_tag",
+        "promo_dependent_tag"
+      ],
+      "missing_columns": []
+    },
+    "Pricing_History": {
+      "rows": 314,
+      "columns": [
+        "price_id",
+        "item_id",
+        "price",
+        "effective_from",
+        "effective_to"
+      ],
+      "missing_columns": []
+    },
+    "Customers": {
+      "rows": 4000,
+      "columns": [
+        "customer_id",
+        "home_city",
+        "signup_date",
+        "preferred_channel",
+        "true_segment"
+      ],
+      "missing_columns": []
+    },
+    "Promotions": {
+      "rows": 12,
+      "columns": [
+        "promotion_id",
+        "promotion_name",
+        "scope",
+        "target_id",
+        "discount_pct",
+        "start_date",
+        "end_date",
+        "channel",
+        "is_trap_flag"
+      ],
+      "missing_columns": []
+    },
+    "Orders": {
+      "rows": 9090,
+      "columns": [
+        "order_id",
+        "customer_id",
+        "restaurant_id",
+        "order_datetime",
+        "channel",
+        "promotion_id",
+        "status",
+        "total_amount"
+      ],
+      "missing_columns": []
+    },
+    "Order_Items": {
+      "rows": 24950,
+      "columns": [
+        "order_item_id",
+        "order_id",
+        "item_id",
+        "quantity",
+        "unit_price",
+        "discount_pct",
+        "promotion_id",
+        "line_total"
+      ],
+      "missing_columns": []
+    },
+    "Ratings": {
+      "rows": 6030,
+      "columns": [
+        "rating_id",
+        "customer_id",
+        "item_id",
+        "restaurant_id",
+        "order_id",
+        "rating",
+        "review_date"
+      ],
+      "missing_columns": []
+    },
+    "Inventory": {
+      "rows": 144000,
+      "columns": [
+        "inventory_id",
+        "restaurant_id",
+        "item_id",
+        "date",
+        "stock_level",
+        "consumed_qty",
+        "replenished_qty"
+      ],
+      "missing_columns": []
+    },
+    "Wastage": {
+      "rows": 4000,
+      "columns": [
+        "wastage_id",
+        "restaurant_id",
+        "item_id",
+        "date",
+        "wasted_qty",
+        "wastage_cost",
+        "reason"
+      ],
+      "missing_columns": []
+    }
+  },
+  "minimums": [
+    {
+      "check": "Order_Items rows (order-line records)",
+      "actual": 24950,
+      "minimum": 1000000,
+      "meets_minimum": false
+    },
+    {
+      "check": "Orders unique order_id",
+      "actual": 9000,
+      "minimum": 100000,
+      "meets_minimum": false
+    },
+    {
+      "check": "Customers unique customer_id",
+      "actual": 4000,
+      "minimum": 50000,
+      "meets_minimum": false
+    },
+    {
+      "check": "Menu_Items unique item_id",
+      "actual": 160,
+      "minimum": 150,
+      "meets_minimum": true
+    },
+    {
+      "check": "Menu_Categories rows",
+      "actual": 11,
+      "minimum": 10,
+      "meets_minimum": true
+    },
+    {
+      "check": "Restaurants rows",
+      "actual": 20,
+      "minimum": 20,
+      "meets_minimum": true
+    },
+    {
+      "check": "Ratings rows",
+      "actual": 6030,
+      "minimum": 100000,
+      "meets_minimum": false
+    },
+    {
+      "check": "Wastage rows",
+      "actual": 4000,
+      "minimum": 50000,
+      "meets_minimum": false
+    }
+  ],
+  "fk_violations": {},
+  "pk_duplicates": {
+    "Restaurants": 0,
+    "Menu_Categories": 0,
+    "Menu_Items": 0,
+    "Pricing_History": 0,
+    "Customers": 0,
+    "Promotions": 0,
+    "Orders": 90,
+    "Order_Items": 0,
+    "Ratings": 0,
+    "Inventory": 0,
+    "Wastage": 0
+  },
+  "months_of_history": 13.7,
+  "scale": "DEMO/DEV SCALE (3/8 SRS minimums met; generate FULL scale with DEMO_MODE=False, see documentation/DATASET_SCALE.md)",
+  "history_range": [
+    "2025-08-03 11:33:04",
+    "2026-09-24 23:55:04"
+  ]
+}

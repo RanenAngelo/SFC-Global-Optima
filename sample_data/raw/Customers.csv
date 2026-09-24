@@ -1,0 +1,201 @@
+customer_id,home_city,signup_date,preferred_channel,true_segment
+CUST000001,Peshawar,2025-11-29,Dine-in,Frequent
+CUST000002,Sialkot,2025-10-24,Third-Party Delivery,Occasional
+CUST000003,Multan,2026-02-24,Website/App,Promotion-Driven
+CUST000004,Quetta,2026-04-05,Takeaway,At-Risk
+CUST000005,Peshawar,2026-04-03,Website/App,Frequent
+CUST000006,Hyderabad,2025-11-17,Website/App,At-Risk
+CUST000007,Quetta,2026-08-26,Takeaway,New
+CUST000008,Quetta,2025-08-30,Website/App,Occasional
+CUST000009,Faisalabad,2025-10-23,Dine-in,At-Risk
+CUST000010,Rawalpindi,2026-09-23,Takeaway,New
+CUST000011,Lahore,2026-09-15,Website/App,New
+CUST000012,Peshawar,2026-09-05,Takeaway,Frequent
+CUST000013,Islamabad,2026-09-05,Third-Party Delivery,Frequent
+CUST000014,Faisalabad,2026-03-20,Dine-in,At-Risk
+CUST000015,Islamabad,2025-12-24,Takeaway,High-Value Loyal
+CUST000016,Sialkot,2026-03-04,Dine-in,At-Risk
+CUST000017,Hyderabad,2026-08-31,Takeaway,New
+CUST000018,Islamabad,2026-09-05,Takeaway,Occasional
+CUST000019,Sialkot,2026-09-02,Takeaway,New
+CUST000020,Karachi,2026-09-08,Dine-in,New
+CUST000021,Islamabad,2025-10-18,Takeaway,Promotion-Driven
+CUST000022,Peshawar,2025-11-05,Website/App,Promotion-Driven
+CUST000023,Faisalabad,2025-12-29,Third-Party Delivery,Frequent
+CUST000024,Quetta,2025-11-19,Dine-in,Frequent
+CUST000025,Peshawar,2025-08-29,Dine-in,Promotion-Driven
+CUST000026,Lahore,2026-05-23,Website/App,At-Risk
+CUST000027,Faisalabad,2026-08-11,Dine-in,High-Value Loyal
+CUST000028,Islamabad,2026-09-22,Takeaway,New
+CUST000029,Islamabad,2026-08-17,Dine-in,Promotion-Driven
+CUST000030,Lahore,2026-01-07,Dine-in,High-Value Loyal
+CUST000031,Peshawar,2025-08-29,Takeaway,Occasional
+CUST000032,Sialkot,2025-08-25,Third-Party Delivery,High-Value Loyal
+CUST000033,Hyderabad,2026-05-26,Dine-in,Frequent
+CUST000034,Hyderabad,2026-04-01,Third-Party Delivery,Promotion-Driven
+CUST000035,Quetta,2026-04-14,Website/App,High-Value Loyal
+CUST000036,Peshawar,2026-04-28,Dine-in,Occasional
+CUST000037,Faisalabad,2025-10-19,Website/App,Frequent
+CUST000038,Karachi,2025-08-29,Third-Party Delivery,Occasional
+CUST000039,Multan,2026-04-17,Dine-in,At-Risk
+CUST000040,Karachi,2025-09-10,Takeaway,Occasional
+CUST000041,Rawalpindi,2025-11-03,Website/App,At-Risk
+CUST000042,Karachi,2025-09-04,Dine-in,High-Value Loyal
+CUST000043,Hyderabad,2026-05-31,Dine-in,Promotion-Driven
+CUST000044,Hyderabad,2025-09-03,Takeaway,Occasional
+CUST000045,Peshawar,2026-07-11,Third-Party Delivery,Occasional
+CUST000046,Multan,2025-11-28,Third-Party Delivery,Occasional
+CUST000047,Multan,2026-02-22,Takeaway,At-Risk
+CUST000048,Karachi,2025-09-30,Dine-in,Promotion-Driven
+CUST000049,Islamabad,2026-05-18,Website/App,Occasional
+CUST000050,Multan,2025-12-04,Dine-in,At-Risk
+CUST000051,Hyderabad,2026-05-23,Dine-in,Frequent
+CUST000052,Lahore,2026-05-31,Dine-in,High-Value Loyal
+CUST000053,Lahore,2025-08-20,Website/App,Occasional
+CUST000054,Hyderabad,2026-06-13,Takeaway,Occasional
+CUST000055,Karachi,2025-09-10,Takeaway,Promotion-Driven
+CUST000056,Rawalpindi,2026-03-02,Takeaway,Occasional
+CUST000057,Hyderabad,2026-07-02,Website/App,Promotion-Driven
+CUST000058,Faisalabad,2026-05-25,Dine-in,Frequent
+CUST000059,Rawalpindi,2026-05-16,Dine-in,Frequent
+CUST000060,Rawalpindi,2026-04-24,Takeaway,Occasional
+CUST000061,Multan,2026-01-08,Dine-in,Frequent
+CUST000062,Lahore,2025-12-11,Website/App,High-Value Loyal
+CUST000063,Islamabad,2025-11-12,Takeaway,Frequent
+CUST000064,Hyderabad,2026-07-08,Dine-in,Frequent
+CUST000065,Quetta,2026-08-01,Dine-in,Occasional
+CUST000066,Hyderabad,2026-01-07,Dine-in,At-Risk
+CUST000067,Islamabad,2025-11-30,Dine-in,Frequent
+CUST000068,Karachi,2026-09-11,Takeaway,New
+CUST000069,Karachi,2025-10-06,Dine-in,Occasional
+CUST000070,Rawalpindi,2026-07-09,Website/App,Frequent
+CUST000071,Lahore,2026-06-26,Dine-in,Occasional
+CUST000072,Islamabad,2025-12-31,Dine-in,Occasional
+CUST000073,Peshawar,2026-03-22,Website/App,Promotion-Driven
+CUST000074,Peshawar,2026-01-08,Takeaway,Occasional
+CUST000075,Multan,2026-08-19,Website/App,At-Risk
+CUST000076,Peshawar,2026-09-23,Dine-in,New
+CUST000077,Karachi,2026-03-22,Dine-in,At-Risk
+CUST000078,Faisalabad,2026-06-14,Dine-in,Occasional
+CUST000079,Rawalpindi,2026-05-15,Dine-in,High-Value Loyal
+CUST000080,Faisalabad,2025-09-20,Third-Party Delivery,Frequent
+CUST000081,Sialkot,2025-09-06,Dine-in,High-Value Loyal
+CUST000082,Lahore,2026-05-02,Takeaway,Occasional
+CUST000083,Rawalpindi,2025-11-17,Third-Party Delivery,Promotion-Driven
+CUST000084,Sialkot,2026-04-16,Third-Party Delivery,Promotion-Driven
+CUST000085,Karachi,2025-12-13,Website/App,Occasional
+CUST000086,Lahore,2025-10-06,Takeaway,Occasional
+CUST000087,Sialkot,2026-01-25,Third-Party Delivery,Frequent
+CUST000088,Quetta,2025-09-04,Takeaway,Frequent
+CUST000089,Lahore,2026-09-12,Dine-in,New
+CUST000090,Karachi,2025-12-23,Takeaway,At-Risk
+CUST000091,Quetta,2025-10-19,Third-Party Delivery,High-Value Loyal
+CUST000092,Karachi,2026-03-12,Takeaway,Frequent
+CUST000093,Quetta,2026-05-05,Dine-in,High-Value Loyal
+CUST000094,Islamabad,2026-09-14,Dine-in,New
+CUST000095,Faisalabad,2026-06-09,Takeaway,High-Value Loyal
+CUST000096,Rawalpindi,2026-09-17,Dine-in,Promotion-Driven
+CUST000097,Peshawar,2026-06-30,Website/App,Occasional
+CUST000098,Sialkot,2026-04-27,Dine-in,Promotion-Driven
+CUST000099,Quetta,2026-09-02,Dine-in,New
+CUST000100,Karachi,2026-09-22,Dine-in,High-Value Loyal
+CUST000101,Hyderabad,2026-05-10,Third-Party Delivery,Occasional
+CUST000102,Islamabad,2026-08-25,Dine-in,New
+CUST000103,Hyderabad,2026-09-20,Website/App,New
+CUST000104,Lahore,2025-10-07,Dine-in,At-Risk
+CUST000105,Quetta,2025-12-13,Dine-in,Frequent
+CUST000106,Lahore,2025-09-28,Dine-in,At-Risk
+CUST000107,Quetta,2025-09-23,Takeaway,Promotion-Driven
+CUST000108,Quetta,2026-08-15,Takeaway,High-Value Loyal
+CUST000109,Hyderabad,2026-05-10,Dine-in,At-Risk
+CUST000110,Rawalpindi,2025-10-18,Dine-in,Frequent
+CUST000111,,2025-12-17,Website/App,Frequent
+CUST000112,Peshawar,2025-12-22,Third-Party Delivery,Promotion-Driven
+CUST000113,Lahore,2026-06-05,Website/App,Frequent
+CUST000114,Quetta,2025-11-15,Website/App,Frequent
+CUST000115,Peshawar,2026-08-02,Website/App,At-Risk
+CUST000116,Multan,2026-01-22,Website/App,Frequent
+CUST000117,Lahore,2025-11-12,Dine-in,Frequent
+CUST000118,Rawalpindi,2026-09-03,Website/App,New
+CUST000119,Islamabad,2025-12-13,Dine-in,Frequent
+CUST000120,Multan,2026-04-15,Takeaway,Promotion-Driven
+CUST000121,Quetta,2026-09-15,Takeaway,New
+CUST000122,Peshawar,2025-08-26,Website/App,Frequent
+CUST000123,Hyderabad,2025-09-16,Website/App,Occasional
+CUST000124,Sialkot,2026-06-20,Takeaway,Frequent
+CUST000125,Faisalabad,2026-03-04,Third-Party Delivery,Occasional
+CUST000126,Islamabad,2025-12-19,Takeaway,Frequent
+CUST000127,Hyderabad,2025-08-22,Takeaway,Occasional
+CUST000128,Peshawar,2026-09-13,Takeaway,New
+CUST000129,Hyderabad,2026-09-19,Takeaway,New
+CUST000130,Sialkot,2026-06-22,Third-Party Delivery,High-Value Loyal
+CUST000131,,2025-12-12,Third-Party Delivery,Occasional
+CUST000132,Islamabad,2025-10-21,Third-Party Delivery,Promotion-Driven
+CUST000133,Islamabad,2026-08-14,Third-Party Delivery,At-Risk
+CUST000134,Rawalpindi,2026-03-14,Website/App,Promotion-Driven
+CUST000135,Islamabad,2026-05-09,Dine-in,Occasional
+CUST000136,Multan,2026-09-10,Website/App,New
+CUST000137,Multan,2026-05-14,Dine-in,High-Value Loyal
+CUST000138,Rawalpindi,2025-08-04,Takeaway,Frequent
+CUST000139,Islamabad,2025-09-26,Dine-in,Occasional
+CUST000140,Peshawar,2025-09-07,Website/App,At-Risk
+CUST000141,Quetta,2026-07-19,Website/App,High-Value Loyal
+CUST000142,Islamabad,2025-10-15,Takeaway,Occasional
+CUST000143,Multan,2026-05-06,Website/App,High-Value Loyal
+CUST000144,Sialkot,2026-08-28,Website/App,New
+CUST000145,Islamabad,2026-02-05,Takeaway,Occasional
+CUST000146,Peshawar,2026-05-25,Website/App,Frequent
+CUST000147,Rawalpindi,2026-05-09,Dine-in,Frequent
+CUST000148,Hyderabad,2025-10-14,Third-Party Delivery,Occasional
+CUST000149,Karachi,2026-09-19,Website/App,New
+CUST000150,Multan,2025-08-21,Third-Party Delivery,At-Risk
+CUST000151,Peshawar,2026-09-12,Takeaway,New
+CUST000152,Hyderabad,2026-08-27,Takeaway,New
+CUST000153,Islamabad,2025-08-20,Dine-in,Occasional
+CUST000154,Multan,2026-01-30,Dine-in,High-Value Loyal
+CUST000155,Islamabad,2025-11-15,Third-Party Delivery,At-Risk
+CUST000156,Sialkot,2026-07-15,Third-Party Delivery,Frequent
+CUST000157,Faisalabad,2025-12-05,Takeaway,Occasional
+CUST000158,Faisalabad,2026-07-07,Website/App,At-Risk
+CUST000159,Peshawar,2026-09-12,Third-Party Delivery,New
+CUST000160,Quetta,2026-09-03,Website/App,Occasional
+CUST000161,Multan,2026-05-13,Dine-in,Occasional
+CUST000162,Hyderabad,2026-02-24,Website/App,Frequent
+CUST000163,Rawalpindi,2026-08-31,Dine-in,New
+CUST000164,Sialkot,2025-10-18,Dine-in,Promotion-Driven
+CUST000165,Islamabad,2025-11-29,Dine-in,Frequent
+CUST000166,Sialkot,2025-10-22,Dine-in,Occasional
+CUST000167,Sialkot,2026-09-13,Third-Party Delivery,Occasional
+CUST000168,Hyderabad,2026-09-19,Takeaway,Frequent
+CUST000169,Rawalpindi,2025-10-29,Takeaway,High-Value Loyal
+CUST000170,Faisalabad,2026-02-27,Takeaway,At-Risk
+CUST000171,Peshawar,2025-08-12,Dine-in,Promotion-Driven
+CUST000172,Quetta,2025-10-30,Takeaway,Frequent
+CUST000173,Peshawar,2026-08-12,Dine-in,Frequent
+CUST000174,Quetta,2026-01-17,Dine-in,Occasional
+CUST000175,Sialkot,2026-08-25,Third-Party Delivery,New
+CUST000176,Peshawar,2026-02-26,Dine-in,Frequent
+CUST000177,Islamabad,2026-09-14,Dine-in,At-Risk
+CUST000178,Hyderabad,2026-07-08,Dine-in,Occasional
+CUST000179,Faisalabad,2026-08-11,Dine-in,High-Value Loyal
+CUST000180,Peshawar,2026-09-19,Website/App,Frequent
+CUST000181,Quetta,2025-12-05,Dine-in,At-Risk
+CUST000182,Sialkot,2025-12-14,Takeaway,Occasional
+CUST000183,Karachi,2025-10-20,Takeaway,Occasional
+CUST000184,Multan,2026-09-07,Third-Party Delivery,High-Value Loyal
+CUST000185,Faisalabad,2026-07-25,Third-Party Delivery,Promotion-Driven
+CUST000186,Lahore,2025-09-24,Dine-in,Occasional
+CUST000187,Islamabad,2026-02-11,Website/App,Occasional
+CUST000188,Quetta,2025-08-19,Website/App,At-Risk
+CUST000189,Sialkot,2026-03-28,Third-Party Delivery,Frequent
+CUST000190,Karachi,2025-11-21,Dine-in,Occasional
+CUST000191,Rawalpindi,2025-11-10,Takeaway,Frequent
+CUST000192,Rawalpindi,2026-09-22,Takeaway,Occasional
+CUST000193,Faisalabad,2026-03-23,Website/App,Frequent
+CUST000194,Hyderabad,2026-01-26,Takeaway,Frequent
+CUST000195,Karachi,2026-01-03,Dine-in,Occasional
+CUST000196,Islamabad,2026-09-24,Third-Party Delivery,High-Value Loyal
+CUST000197,Rawalpindi,2026-09-11,Website/App,At-Risk
+CUST000198,Peshawar,2025-11-24,Third-Party Delivery,Promotion-Driven
+CUST000199,Islamabad,2025-11-22,Takeaway,Promotion-Driven
+CUST000200,Sialkot,2025-08-12,Dine-in,Frequent

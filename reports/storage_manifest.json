@@ -1,0 +1,76 @@
+{
+  "formats": [
+    "CSV (raw, in repo)",
+    "Parquet (mirror)",
+    "SQLite (RDB)",
+    "JSON (extracts)"
+  ],
+  "tables": {
+    "restaurants": {
+      "rows": 20,
+      "parquet": "parquet_data/raw/restaurants.parquet",
+      "sqlite": "raw_restaurants",
+      "sample": "sample_data/raw/Restaurants.csv"
+    },
+    "menu_categories": {
+      "rows": 11,
+      "parquet": "parquet_data/raw/menu_categories.parquet",
+      "sqlite": "raw_menu_categories",
+      "sample": "sample_data/raw/Menu_Categories.csv"
+    },
+    "menu_items": {
+      "rows": 160,
+      "parquet": "parquet_data/raw/menu_items.parquet",
+      "sqlite": "raw_menu_items",
+      "sample": "sample_data/raw/Menu_Items.csv"
+    },
+    "pricing_history": {
+      "rows": 314,
+      "parquet": "parquet_data/raw/pricing_history.parquet",
+      "sqlite": "raw_pricing_history",
+      "sample": "sample_data/raw/Pricing_History.csv"
+    },
+    "customers": {
+      "rows": 4000,
+      "parquet": "parquet_data/raw/customers.parquet",
+      "sqlite": "raw_customers",
+      "sample": "sample_data/raw/Customers.csv"
+    },
+    "promotions": {
+      "rows": 12,
+      "parquet": "parquet_data/raw/promotions.parquet",
+      "sqlite": "raw_promotions",
+      "sample": "sample_data/raw/Promotions.csv"
+    },
+    "orders": {
+      "rows": 9090,
+      "parquet": "parquet_data/raw/orders.parquet",
+      "sqlite": "raw_orders",
+      "sample": "sample_data/raw/Orders.csv"
+    },
+    "order_items": {
+      "rows": 24950,
+      "parquet": "parquet_data/raw/order_items.parquet",
+      "sqlite": "raw_order_items",
+      "sample": "sample_data/raw/Order_Items.csv"
+    },
+    "ratings": {
+      "rows": 6030,
+      "parquet": "parquet_data/raw/ratings.parquet",
+      "sqlite": "raw_ratings",
+      "sample": "sample_data/raw/Ratings.csv"
+    },
+    "inventory": {
+      "rows": 144000,
+      "parquet": "parquet_data/raw/inventory.parquet",
+      "sqlite": "raw_inventory",
+      "sample": "sample_data/raw/Inventory.csv"
+    },
+    "wastage": {
+      "rows": 4000,
+      "parquet": "parquet_data/raw/wastage.parquet",
+      "sqlite": "raw_wastage",
+      "sample": "sample_data/raw/Wastage.csv"
+    }
+  }
+}

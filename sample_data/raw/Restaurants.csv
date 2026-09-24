@@ -1,0 +1,21 @@
+restaurant_id,restaurant_name,city,region,restaurant_type,opening_date,performance_tier
+R001,DineIQ Karachi - Branch 01,Karachi,Karachi,Cloud Kitchen,2023-10-14,Average
+R002,DineIQ Lahore - Branch 02,Lahore,Lahore,Casual Dining,2024-10-02,Average
+R003,DineIQ Islamabad - Branch 03,Islamabad,Islamabad,Casual Dining,2021-12-13,High
+R004,DineIQ Rawalpindi - Branch 04,Rawalpindi,Rawalpindi,Fast Casual,2022-04-15,High
+R005,DineIQ Faisalabad - Branch 05,Faisalabad,Faisalabad,Fast Casual,2022-07-13,Average
+R006,DineIQ Multan - Branch 06,Multan,Multan,Cloud Kitchen,2023-06-21,High
+R007,DineIQ Peshawar - Branch 07,Peshawar,Peshawar,Casual Dining,2023-11-20,Low
+R008,DineIQ Quetta - Branch 08,Quetta,Quetta,Casual Dining,2018-12-02,High
+R009,DineIQ Hyderabad - Branch 09,Hyderabad,Hyderabad,Casual Dining,2024-01-22,Average
+R010,DineIQ Sialkot - Branch 10,Sialkot,Sialkot,Casual Dining,2020-04-20,Average
+R011,DineIQ Karachi - Branch 11,Karachi,Karachi,Fine Dining,2024-09-04,Average
+R012,DineIQ Lahore - Branch 12,Lahore,Lahore,Casual Dining,2024-09-12,Average
+R013,DineIQ Islamabad - Branch 13,Islamabad,Islamabad,Fast Casual,2023-12-26,Average
+R014,DineIQ Rawalpindi - Branch 14,Rawalpindi,Rawalpindi,Casual Dining,2022-08-01,High
+R015,DineIQ Faisalabad - Branch 15,Faisalabad,Faisalabad,Fine Dining,2022-06-05,Average
+R016,DineIQ Multan - Branch 16,Multan,Multan,Casual Dining,2019-05-15,Average
+R017,DineIQ Peshawar - Branch 17,Peshawar,Peshawar,Cloud Kitchen,2024-09-26,High
+R018,DineIQ Quetta - Branch 18,Quetta,Quetta,Fast Casual,2018-09-28,Low
+R019,DineIQ Hyderabad - Branch 19,Hyderabad,Hyderabad,Fine Dining,2022-10-21,Average
+R020,DineIQ Sialkot - Branch 20,Sialkot,Sialkot,Casual Dining,2018-12-03,Average

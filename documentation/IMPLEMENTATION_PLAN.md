@@ -27,12 +27,12 @@ Rule: implement in this exact order; each step is COMPLETE only when implemented
 | 20 | Demand Forecasting (items/categories/locations; configurable horizons) | ✅ COMPLETE |
 | 21 | Time-Aware Model Validation (chronological split, no leakage) | ✅ COMPLETE |
 | 22 | Forecast Accuracy Evaluation (MAE/RMSE/MAPE/R²) | ✅ COMPLETE |
-| 23 | Wastage Analysis (9 breakdown dimensions) | PENDING |
-| 24 | Wastage Risk Prediction (9 candidate predictors) | PENDING |
-| 25 | Price Intelligence (price/demand/revenue/margin/discount/rating/repeat) | PENDING |
-| 26 | Price-Sensitivity Analysis (Highly/Moderately/Low) | PENDING |
-| 27 | Promotion Effectiveness Analysis (8 measures; sales ≠ success) | PENDING |
-| 28 | Promotion Trap Detection (5 misleading patterns) | PENDING |
+| 23 | Wastage Analysis (9 breakdown dimensions) | ✅ COMPLETE |
+| 24 | Wastage Risk Prediction (9 candidate predictors) | ✅ COMPLETE |
+| 25 | Price Intelligence (price/demand/revenue/margin/discount/rating/repeat) | ✅ COMPLETE |
+| 26 | Price-Sensitivity Analysis (Highly/Moderately/Low) | ✅ COMPLETE |
+| 27 | Promotion Effectiveness Analysis (8 measures; sales ≠ success) | ✅ COMPLETE |
+| 28 | Promotion Trap Detection (5 misleading patterns) | ✅ COMPLETE |
 | 29 | Rating and Satisfaction Analysis (ratings vs 7 dimensions) | PENDING |
 | 30 | Rating Anomaly Detection (5 unusual patterns) | PENDING |
 | 31 | Sales Anomaly Detection (6 unusual event types) | PENDING |

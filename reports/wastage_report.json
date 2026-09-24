@@ -1,0 +1,99 @@
+{
+  "total_wasted_qty": 26079.1,
+  "total_wastage_cost": 203350.0,
+  "incidents": 3969,
+  "top_items": [
+    {
+      "item_id": "M0059",
+      "item_name": "Classic Beef Steak",
+      "category_id": "C04",
+      "wasted_qty": 959.9,
+      "wastage_cost": 13285.03,
+      "incidents": 106,
+      "units_sold": 140,
+      "waste_per_unit_sold": 6.8564
+    },
+    {
+      "item_id": "M0130",
+      "item_name": "Chef's Special Fresh Orange Juice",
+      "category_id": "C09",
+      "wasted_qty": 941.2,
+      "wastage_cost": 11332.04,
+      "incidents": 100,
+      "units_sold": 258,
+      "waste_per_unit_sold": 3.6481
+    },
+    {
+      "item_id": "M0142",
+      "item_name": "Family-Size Coleslaw",
+      "category_id": "C10",
+      "wasted_qty": 868.8,
+      "wastage_cost": 10608.06,
+      "incidents": 95,
+      "units_sold": 53,
+      "waste_per_unit_sold": 16.3925
+    },
+    {
+      "item_id": "M0062",
+      "item_name": "Grilled-Style Butter Chicken",
+      "category_id": "C04",
+      "wasted_qty": 833.9,
+      "wastage_cost": 10415.43,
+      "incidents": 92,
+      "units_sold": 48,
+      "waste_per_unit_sold": 17.3729
+    },
+    {
+      "item_id": "M0134",
+      "item_name": "Garlic Naan",
+      "category_id": "C10",
+      "wasted_qty": 762.0,
+      "wastage_cost": 10111.7,
+      "incidents": 85,
+      "units_sold": 314,
+      "waste_per_unit_sold": 2.4268
+    }
+  ],
+  "top_locations": [
+    {
+      "restaurant_id": "R007",
+      "city": "Peshawar",
+      "wasted_qty": 1448.2,
+      "wastage_cost": 11402.31
+    },
+    {
+      "restaurant_id": "R020",
+      "city": "Sialkot",
+      "wasted_qty": 1503.1,
+      "wastage_cost": 11307.37
+    },
+    {
+      "restaurant_id": "R006",
+      "city": "Multan",
+      "wasted_qty": 1387.3,
+      "wastage_cost": 11267.12
+    },
+    {
+      "restaurant_id": "R011",
+      "city": "Karachi",
+      "wasted_qty": 1353.3,
+      "wastage_cost": 10932.63
+    },
+    {
+      "restaurant_id": "R005",
+      "city": "Faisalabad",
+      "wasted_qty": 1389.2,
+      "wastage_cost": 10736.81
+    }
+  ],
+  "by_reason": {
+    "Customer Return": 4090.3,
+    "Expired Ingredients": 4173.4,
+    "Overproduction": 4638.3,
+    "Preparation Waste": 4294.7,
+    "Quality Rejection": 4584.4,
+    "Spoilage": 4298.0
+  },
+  "daily_avg_qty": 61.95,
+  "high_risk_items": 14
+}

@@ -1,0 +1,8 @@
+{
+  "promotions": 12,
+  "successful": 4,
+  "traps_found": 2,
+  "trap_types": {
+    "margin_erosion": 2
+  }
+}

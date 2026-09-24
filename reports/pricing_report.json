@@ -1,0 +1,9 @@
+{
+  "price_events": 151,
+  "with_evidence": 7,
+  "verdicts": {
+    "insufficient_evidence": 144,
+    "Highly Price Sensitive": 7
+  },
+  "items_classified": 7
+}

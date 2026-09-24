@@ -1,0 +1,772 @@
+{
+  "top_selling_dishes": [
+    {
+      "item_id": "M0135",
+      "item_name": "Coleslaw",
+      "units_sold": 918
+    },
+    {
+      "item_id": "M0133",
+      "item_name": "French Fries",
+      "units_sold": 841
+    },
+    {
+      "item_id": "M0079",
+      "item_name": "Margherita Pizza",
+      "units_sold": 736
+    },
+    {
+      "item_id": "M0081",
+      "item_name": "BBQ Chicken Pizza",
+      "units_sold": 652
+    },
+    {
+      "item_id": "M0105",
+      "item_name": "Chocolate Lava Cake",
+      "units_sold": 646
+    },
+    {
+      "item_id": "M0120",
+      "item_name": "Iced Tea",
+      "units_sold": 636
+    },
+    {
+      "item_id": "M0121",
+      "item_name": "Cold Coffee",
+      "units_sold": 615
+    },
+    {
+      "item_id": "M0094",
+      "item_name": "Zinger Burger",
+      "units_sold": 604
+    },
+    {
+      "item_id": "M0064",
+      "item_name": "Truffle Pasta",
+      "units_sold": 585
+    },
+    {
+      "item_id": "M0093",
+      "item_name": "Chicken Burger",
+      "units_sold": 582
+    }
+  ],
+  "lowest_selling_dishes": [
+    {
+      "item_id": "M0023",
+      "item_name": "Lentil Soup",
+      "units_sold": 29
+    },
+    {
+      "item_id": "M0160",
+      "item_name": "Matcha Cheesecake",
+      "units_sold": 31
+    },
+    {
+      "item_id": "M0106",
+      "item_name": "Cheesecake",
+      "units_sold": 33
+    },
+    {
+      "item_id": "M0101",
+      "item_name": "Family-Size Zinger Burger",
+      "units_sold": 34
+    },
+    {
+      "item_id": "M0155",
+      "item_name": "Chef's Special Butter Garlic Prawns",
+      "units_sold": 35
+    },
+    {
+      "item_id": "M0030",
+      "item_name": "Grilled-Style Lentil Soup",
+      "units_sold": 37
+    },
+    {
+      "item_id": "M0034",
+      "item_name": "Quinoa Bowl",
+      "units_sold": 37
+    },
+    {
+      "item_id": "M0021",
+      "item_name": "Tomato Basil Soup",
+      "units_sold": 37
+    },
+    {
+      "item_id": "M0096",
+      "item_name": "Veggie Burger",
+      "units_sold": 38
+    },
+    {
+      "item_id": "M0085",
+      "item_name": "Paneer Tikka Pizza",
+      "units_sold": 38
+    }
+  ],
+  "highest_revenue_dishes": [
+    {
+      "item_id": "M0135",
+      "item_name": "Coleslaw",
+      "revenue": 15256.8
+    },
+    {
+      "item_id": "M0093",
+      "item_name": "Chicken Burger",
+      "revenue": 14817.63
+    },
+    {
+      "item_id": "M0055",
+      "item_name": "Mutton Biryani",
+      "revenue": 12677.38
+    },
+    {
+      "item_id": "M0051",
+      "item_name": "Fish & Chips",
+      "revenue": 12381.16
+    },
+    {
+      "item_id": "M0083",
+      "item_name": "Four Cheese Pizza",
+      "revenue": 12350.28
+    },
+    {
+      "item_id": "M0092",
+      "item_name": "Beef Burger",
+      "revenue": 11635.63
+    },
+    {
+      "item_id": "M0105",
+      "item_name": "Chocolate Lava Cake",
+      "revenue": 11566.44
+    },
+    {
+      "item_id": "M0098",
+      "item_name": "Double Patty Burger",
+      "revenue": 11250.82
+    },
+    {
+      "item_id": "M0111",
+      "item_name": "Creme Caramel",
+      "revenue": 11091.81
+    },
+    {
+      "item_id": "M0064",
+      "item_name": "Truffle Pasta",
+      "revenue": 10498.93
+    }
+  ],
+  "highest_profit_dishes": [
+    {
+      "item_id": "M0083",
+      "item_name": "Four Cheese Pizza",
+      "profit": 8660.58
+    },
+    {
+      "item_id": "M0092",
+      "item_name": "Beef Burger",
+      "profit": 8499.19
+    },
+    {
+      "item_id": "M0098",
+      "item_name": "Double Patty Burger",
+      "profit": 8013.52
+    },
+    {
+      "item_id": "M0135",
+      "item_name": "Coleslaw",
+      "profit": 7720.02
+    },
+    {
+      "item_id": "M0055",
+      "item_name": "Mutton Biryani",
+      "profit": 7603.3
+    },
+    {
+      "item_id": "M0105",
+      "item_name": "Chocolate Lava Cake",
+      "profit": 7412.66
+    },
+    {
+      "item_id": "M0111",
+      "item_name": "Creme Caramel",
+      "profit": 7233.24
+    },
+    {
+      "item_id": "M0093",
+      "item_name": "Chicken Burger",
+      "profit": 7141.05
+    },
+    {
+      "item_id": "M0063",
+      "item_name": "Spicy Fish & Chips",
+      "profit": 6783.94
+    },
+    {
+      "item_id": "M0134",
+      "item_name": "Garlic Naan",
+      "profit": 5892.38
+    }
+  ],
+  "highest_margin_dishes": [
+    {
+      "item_id": "M0071",
+      "item_name": "Wild Mushroom Risotto",
+      "margin_pct": 74.98,
+      "lines": 33
+    },
+    {
+      "item_id": "M0063",
+      "item_name": "Spicy Fish & Chips",
+      "margin_pct": 74.5,
+      "lines": 201
+    },
+    {
+      "item_id": "M0005",
+      "item_name": "Bruschetta",
+      "margin_pct": 74.0,
+      "lines": 32
+    },
+    {
+      "item_id": "M0015",
+      "item_name": "Family-Size Loaded Nachos",
+      "margin_pct": 73.23,
+      "lines": 48
+    },
+    {
+      "item_id": "M0092",
+      "item_name": "Beef Burger",
+      "margin_pct": 73.04,
+      "lines": 319
+    },
+    {
+      "item_id": "M0150",
+      "item_name": "Grilled Fish Fillet",
+      "margin_pct": 71.59,
+      "lines": 87
+    },
+    {
+      "item_id": "M0054",
+      "item_name": "Chicken Tikka",
+      "margin_pct": 71.54,
+      "lines": 91
+    },
+    {
+      "item_id": "M0098",
+      "item_name": "Double Patty Burger",
+      "margin_pct": 71.23,
+      "lines": 207
+    },
+    {
+      "item_id": "M0083",
+      "item_name": "Four Cheese Pizza",
+      "margin_pct": 70.12,
+      "lines": 208
+    },
+    {
+      "item_id": "M0113",
+      "item_name": "Spicy Chocolate Lava Cake",
+      "margin_pct": 69.98,
+      "lines": 119
+    }
+  ],
+  "high_wastage_dishes": [
+    {
+      "item_id": "M0052",
+      "item_name": "Roast Chicken",
+      "wasted_qty": 1123.5,
+      "wastage_cost": 8347.57
+    },
+    {
+      "item_id": "M0121",
+      "item_name": "Cold Coffee",
+      "wasted_qty": 961.4,
+      "wastage_cost": 4960.81
+    },
+    {
+      "item_id": "M0059",
+      "item_name": "Classic Beef Steak",
+      "wasted_qty": 959.9,
+      "wastage_cost": 13285.03
+    },
+    {
+      "item_id": "M0130",
+      "item_name": "Chef's Special Fresh Orange Juice",
+      "wasted_qty": 941.2,
+      "wastage_cost": 11332.04
+    },
+    {
+      "item_id": "M0048",
+      "item_name": "Chicken Karahi",
+      "wasted_qty": 936.0,
+      "wastage_cost": 3088.8
+    },
+    {
+      "item_id": "M0137",
+      "item_name": "Steamed Rice",
+      "wasted_qty": 924.8,
+      "wastage_cost": 5206.59
+    },
+    {
+      "item_id": "M0053",
+      "item_name": "BBQ Platter",
+      "wasted_qty": 904.9,
+      "wastage_cost": 5592.29
+    },
+    {
+      "item_id": "M0082",
+      "item_name": "Veggie Supreme Pizza",
+      "wasted_qty": 880.1,
+      "wastage_cost": 5887.86
+    },
+    {
+      "item_id": "M0095",
+      "item_name": "Cheese Burger",
+      "wasted_qty": 874.5,
+      "wastage_cost": 3742.85
+    },
+    {
+      "item_id": "M0142",
+      "item_name": "Family-Size Coleslaw",
+      "wasted_qty": 868.8,
+      "wastage_cost": 10608.06
+    }
+  ],
+  "best_rated_dishes": [
+    {
+      "item_id": "M0106",
+      "item_name": "Cheesecake",
+      "avg_rating": 4.62,
+      "n": 39
+    },
+    {
+      "item_id": "M0003",
+      "item_name": "Loaded Nachos",
+      "avg_rating": 4.43,
+      "n": 46
+    },
+    {
+      "item_id": "M0090",
+      "item_name": "Grilled-Style Four Cheese Pizza",
+      "avg_rating": 4.4,
+      "n": 48
+    },
+    {
+      "item_id": "M0129",
+      "item_name": "Family-Size Cold Coffee",
+      "avg_rating": 4.39,
+      "n": 49
+    },
+    {
+      "item_id": "M0032",
+      "item_name": "Caesar Salad",
+      "avg_rating": 4.37,
+      "n": 46
+    },
+    {
+      "item_id": "M0079",
+      "item_name": "Margherita Pizza",
+      "avg_rating": 4.36,
+      "n": 129
+    },
+    {
+      "item_id": "M0111",
+      "item_name": "Creme Caramel",
+      "avg_rating": 4.35,
+      "n": 52
+    },
+    {
+      "item_id": "M0001",
+      "item_name": "Spring Rolls",
+      "avg_rating": 4.33,
+      "n": 43
+    },
+    {
+      "item_id": "M0087",
+      "item_name": "Classic Pepperoni Pizza",
+      "avg_rating": 4.33,
+      "n": 58
+    },
+    {
+      "item_id": "M0057",
+      "item_name": "Beef Stroganoff",
+      "avg_rating": 4.32,
+      "n": 66
+    }
+  ],
+  "poorly_rated_dishes": [
+    {
+      "item_id": "M0132",
+      "item_name": "Spicy Soft Drink",
+      "avg_rating": 2.9,
+      "n": 10
+    },
+    {
+      "item_id": "M0126",
+      "item_name": "Mint Margarita (Mocktail)",
+      "avg_rating": 3.1,
+      "n": 10
+    },
+    {
+      "item_id": "M0078",
+      "item_name": "Spicy Mushroom Ravioli",
+      "avg_rating": 3.15,
+      "n": 13
+    },
+    {
+      "item_id": "M0031",
+      "item_name": "Spicy Seafood Chowder",
+      "avg_rating": 3.18,
+      "n": 11
+    },
+    {
+      "item_id": "M0096",
+      "item_name": "Veggie Burger",
+      "avg_rating": 3.18,
+      "n": 11
+    },
+    {
+      "item_id": "M0141",
+      "item_name": "Classic Garlic Naan",
+      "avg_rating": 3.21,
+      "n": 14
+    },
+    {
+      "item_id": "M0043",
+      "item_name": "Chef's Special Garden Salad",
+      "avg_rating": 3.27,
+      "n": 11
+    },
+    {
+      "item_id": "M0035",
+      "item_name": "Garden Salad",
+      "avg_rating": 3.27,
+      "n": 11
+    },
+    {
+      "item_id": "M0128",
+      "item_name": "Classic Iced Tea",
+      "avg_rating": 3.31,
+      "n": 16
+    },
+    {
+      "item_id": "M0053",
+      "item_name": "BBQ Platter",
+      "avg_rating": 3.38,
+      "n": 26
+    }
+  ],
+  "popular_menu_categories": [
+    {
+      "category_id": "C04",
+      "category_name": "Main Course",
+      "units": 3377,
+      "revenue": 67186.69
+    },
+    {
+      "category_id": "C07",
+      "category_name": "Burgers",
+      "units": 2946,
+      "revenue": 60021.03
+    },
+    {
+      "category_id": "C10",
+      "category_name": "Sides",
+      "units": 3669,
+      "revenue": 57616.3
+    },
+    {
+      "category_id": "C08",
+      "category_name": "Desserts",
+      "units": 2922,
+      "revenue": 52535.72
+    },
+    {
+      "category_id": "C01",
+      "category_name": "Appetizers",
+      "units": 3026,
+      "revenue": 50815.37
+    },
+    {
+      "category_id": "C05",
+      "category_name": "Pasta & Risotto",
+      "units": 2490,
+      "revenue": 47601.31
+    },
+    {
+      "category_id": "C06",
+      "category_name": "Pizza",
+      "units": 3628,
+      "revenue": 41605.17
+    },
+    {
+      "category_id": "C09",
+      "category_name": "Beverages",
+      "units": 3977,
+      "revenue": 40710.69
+    },
+    {
+      "category_id": "C03",
+      "category_name": "Salads",
+      "units": 2082,
+      "revenue": 36983.08
+    },
+    {
+      "category_id": "C11",
+      "category_name": "Seafood",
+      "units": 1847,
+      "revenue": 28579.8
+    },
+    {
+      "category_id": "C02",
+      "category_name": "Soups",
+      "units": 1667,
+      "revenue": 18492.87
+    }
+  ],
+  "peak_ordering_periods": [
+    {
+      "hour": 8,
+      "orders": 135
+    },
+    {
+      "hour": 9,
+      "orders": 102
+    },
+    {
+      "hour": 10,
+      "orders": 142
+    },
+    {
+      "hour": 11,
+      "orders": 895
+    },
+    {
+      "hour": 12,
+      "orders": 920
+    },
+    {
+      "hour": 13,
+      "orders": 869
+    },
+    {
+      "hour": 14,
+      "orders": 852
+    },
+    {
+      "hour": 15,
+      "orders": 142
+    },
+    {
+      "hour": 16,
+      "orders": 138
+    },
+    {
+      "hour": 17,
+      "orders": 122
+    },
+    {
+      "hour": 18,
+      "orders": 815
+    },
+    {
+      "hour": 19,
+      "orders": 794
+    },
+    {
+      "hour": 20,
+      "orders": 804
+    },
+    {
+      "hour": 21,
+      "orders": 806
+    },
+    {
+      "hour": 22,
+      "orders": 807
+    },
+    {
+      "hour": 23,
+      "orders": 127
+    }
+  ],
+  "location_sales_patterns": [
+    {
+      "restaurant_id": "R003",
+      "restaurant_name": "DineIQ Islamabad - Branch 03",
+      "city": "Islamabad",
+      "orders": 422,
+      "revenue": 27800.64
+    },
+    {
+      "restaurant_id": "R017",
+      "restaurant_name": "DineIQ Peshawar - Branch 17",
+      "city": "Peshawar",
+      "orders": 465,
+      "revenue": 27686.52
+    },
+    {
+      "restaurant_id": "R011",
+      "restaurant_name": "DineIQ Karachi - Branch 11",
+      "city": "Karachi",
+      "orders": 469,
+      "revenue": 27642.71
+    },
+    {
+      "restaurant_id": "R016",
+      "restaurant_name": "DineIQ Multan - Branch 16",
+      "city": "Multan",
+      "orders": 483,
+      "revenue": 27366.14
+    },
+    {
+      "restaurant_id": "R010",
+      "restaurant_name": "DineIQ Sialkot - Branch 10",
+      "city": "Sialkot",
+      "orders": 441,
+      "revenue": 27100.67
+    },
+    {
+      "restaurant_id": "R009",
+      "restaurant_name": "DineIQ Hyderabad - Branch 09",
+      "city": "Hyderabad",
+      "orders": 440,
+      "revenue": 27011.73
+    },
+    {
+      "restaurant_id": "R006",
+      "restaurant_name": "DineIQ Multan - Branch 06",
+      "city": "Multan",
+      "orders": 462,
+      "revenue": 26793.24
+    },
+    {
+      "restaurant_id": "R020",
+      "restaurant_name": "DineIQ Sialkot - Branch 20",
+      "city": "Sialkot",
+      "orders": 453,
+      "revenue": 25703.75
+    },
+    {
+      "restaurant_id": "R001",
+      "restaurant_name": "DineIQ Karachi - Branch 01",
+      "city": "Karachi",
+      "orders": 422,
+      "revenue": 25290.15
+    },
+    {
+      "restaurant_id": "R013",
+      "restaurant_name": "DineIQ Islamabad - Branch 13",
+      "city": "Islamabad",
+      "orders": 440,
+      "revenue": 25127.35
+    },
+    {
+      "restaurant_id": "R005",
+      "restaurant_name": "DineIQ Faisalabad - Branch 05",
+      "city": "Faisalabad",
+      "orders": 401,
+      "revenue": 24544.18
+    },
+    {
+      "restaurant_id": "R007",
+      "restaurant_name": "DineIQ Peshawar - Branch 07",
+      "city": "Peshawar",
+      "orders": 426,
+      "revenue": 24455.48
+    },
+    {
+      "restaurant_id": "R018",
+      "restaurant_name": "DineIQ Quetta - Branch 18",
+      "city": "Quetta",
+      "orders": 416,
+      "revenue": 24452.94
+    },
+    {
+      "restaurant_id": "R014",
+      "restaurant_name": "DineIQ Rawalpindi - Branch 14",
+      "city": "Rawalpindi",
+      "orders": 410,
+      "revenue": 24159.05
+    },
+    {
+      "restaurant_id": "R012",
+      "restaurant_name": "DineIQ Lahore - Branch 12",
+      "city": "Lahore",
+      "orders": 404,
+      "revenue": 24100.28
+    },
+    {
+      "restaurant_id": "R008",
+      "restaurant_name": "DineIQ Quetta - Branch 08",
+      "city": "Quetta",
+      "orders": 389,
+      "revenue": 23688.95
+    },
+    {
+      "restaurant_id": "R015",
+      "restaurant_name": "DineIQ Faisalabad - Branch 15",
+      "city": "Faisalabad",
+      "orders": 387,
+      "revenue": 23200.68
+    },
+    {
+      "restaurant_id": "R004",
+      "restaurant_name": "DineIQ Rawalpindi - Branch 04",
+      "city": "Rawalpindi",
+      "orders": 397,
+      "revenue": 22370.5
+    },
+    {
+      "restaurant_id": "R002",
+      "restaurant_name": "DineIQ Lahore - Branch 02",
+      "city": "Lahore",
+      "orders": 374,
+      "revenue": 22037.44
+    },
+    {
+      "restaurant_id": "R019",
+      "restaurant_name": "DineIQ Hyderabad - Branch 19",
+      "city": "Hyderabad",
+      "orders": 369,
+      "revenue": 21615.63
+    }
+  ],
+  "channel_ordering_patterns": [
+    {
+      "channel": "Dine-in",
+      "orders": 3369,
+      "revenue": 202588.39,
+      "aov": 60.13
+    },
+    {
+      "channel": "Takeaway",
+      "orders": 1820,
+      "revenue": 107830.63,
+      "aov": 59.25
+    },
+    {
+      "channel": "Website/App",
+      "orders": 1779,
+      "revenue": 104450.6,
+      "aov": 58.71
+    },
+    {
+      "channel": "Third-Party Delivery",
+      "orders": 1502,
+      "revenue": 87278.41,
+      "aov": 58.11
+    }
+  ],
+  "promotion_driven_sales": [
+    {
+      "grp": "promo",
+      "orders": 445,
+      "revenue": 22448.52
+    },
+    {
+      "grp": "no_promo",
+      "orders": 8025,
+      "revenue": 479699.51
+    }
+  ]
+}

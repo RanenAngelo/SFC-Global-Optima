@@ -1,0 +1,111 @@
+{
+  "tables": {
+    "restaurants": {
+      "accepted": 20,
+      "rejected": 0
+    },
+    "menu_categories": {
+      "accepted": 11,
+      "rejected": 0
+    },
+    "menu_items": {
+      "accepted": 159,
+      "rejected": 1
+    },
+    "pricing_history": {
+      "accepted": 311,
+      "rejected": 3
+    },
+    "customers": {
+      "accepted": 4000,
+      "rejected": 0
+    },
+    "promotions": {
+      "accepted": 12,
+      "rejected": 0
+    },
+    "orders": {
+      "accepted": 8794,
+      "rejected": 296
+    },
+    "order_items": {
+      "accepted": 24377,
+      "rejected": 573
+    },
+    "ratings": {
+      "accepted": 5982,
+      "rejected": 48
+    },
+    "inventory": {
+      "accepted": 144000,
+      "rejected": 0
+    },
+    "wastage": {
+      "accepted": 3981,
+      "rejected": 19
+    }
+  },
+  "decisions": [
+    {
+      "table": "orders",
+      "action": "quarantine",
+      "rule": "DUP_PK",
+      "rows": 90
+    },
+    {
+      "table": "orders",
+      "action": "quarantine",
+      "rule": "MISSING_FK",
+      "rows": 135
+    },
+    {
+      "table": "orders",
+      "action": "quarantine",
+      "rule": "NEG_MONEY",
+      "rows": 71
+    },
+    {
+      "table": "order_items",
+      "action": "quarantine",
+      "rule": "MISSING_FK",
+      "rows": 374
+    },
+    {
+      "table": "order_items",
+      "action": "quarantine",
+      "rule": "NEG_QTY",
+      "rows": 199
+    },
+    {
+      "table": "menu_items",
+      "action": "quarantine",
+      "rule": "BAD_PRICE/BAD_FK",
+      "rows": 1
+    },
+    {
+      "table": "ratings",
+      "action": "quarantine",
+      "rule": "BAD_RATING/BAD_FK/BAD_DATE",
+      "rows": 48
+    },
+    {
+      "table": "customers",
+      "action": "correct",
+      "rule": "IMPUTE_CITY",
+      "rows": 60
+    },
+    {
+      "table": "pricing_history",
+      "action": "quarantine",
+      "rule": "BAD_DATE/BAD_PRICE/BAD_FK",
+      "rows": 3
+    },
+    {
+      "table": "wastage",
+      "action": "quarantine",
+      "rule": "EXTREME_WASTE(>30.4)/BAD_FK",
+      "rows": 19
+    }
+  ],
+  "wastage_bound": 30.4
+}

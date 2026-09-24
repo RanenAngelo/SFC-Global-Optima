@@ -1,0 +1,75 @@
+{
+  "missing_values": {
+    "pricing_history": {
+      "effective_to": 160
+    },
+    "customers": {
+      "home_city": 60
+    },
+    "orders": {
+      "customer_id": 136,
+      "promotion_id": 8613
+    },
+    "order_items": {
+      "item_id": 374,
+      "promotion_id": 24381
+    },
+    "ratings": {
+      "order_id": 30
+    }
+  },
+  "duplicate_orders": 180,
+  "duplicate_order_lines": 0,
+  "invalid_menu_prices": 1,
+  "negative_quantities": {
+    "order_items": 200,
+    "inventory_consumed": 0,
+    "inventory_stock": 0,
+    "wastage_qty": 0
+  },
+  "invalid_dates": {
+    "orders_null_datetime": 0,
+    "pricing_end_before_start": 3,
+    "promo_end_before_start": 0,
+    "ratings_null_date": 0
+  },
+  "invalid_ratings": 48,
+  "missing_customer_ids": 136,
+  "missing_menu_ids": 374,
+  "invalid_restaurant_ids": {
+    "orders": 0,
+    "ratings": 0,
+    "inventory": 0,
+    "wastage": 0,
+    "customers_unknown_home_city": 0
+  },
+  "fk_violations": {},
+  "impossible_wastage": {
+    "rule": "wasted_qty <= 0 OR wasted_qty > 30.4 (Q3 + 3*IQR)",
+    "count": 19
+  },
+  "incorrect_discounts": {
+    "discount_out_of_range": 0,
+    "line_total_mismatch": 200
+  },
+  "cancelled_transactions": 267,
+  "cancelled_share_pct": 2.94,
+  "inconsistent_units": {
+    "negative_unit_price": 0,
+    "negative_total_amount": 73,
+    "line_total_negative": 0
+  },
+  "row_counts": {
+    "restaurants": 20,
+    "menu_categories": 11,
+    "menu_items": 160,
+    "pricing_history": 314,
+    "customers": 4000,
+    "promotions": 12,
+    "orders": 9090,
+    "order_items": 24950,
+    "ratings": 6030,
+    "inventory": 144000,
+    "wastage": 4000
+  }
+}

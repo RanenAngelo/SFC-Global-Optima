@@ -1,0 +1,313 @@
+{
+  "data_dir": "/home/user/SFC-Global-Optima/Ranen",
+  "total_seconds": 9.39,
+  "tables": {
+    "restaurants": {
+      "table": "restaurants",
+      "rows": 20,
+      "seconds": 4.43,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": null,
+      "inferred_types": {
+        "restaurant_id": "StringType()",
+        "restaurant_name": "StringType()",
+        "city": "StringType()",
+        "region": "StringType()",
+        "restaurant_type": "StringType()",
+        "opening_date": "StringType()",
+        "performance_tier": "StringType()"
+      },
+      "explicit_types": {
+        "restaurant_id": "StringType()",
+        "restaurant_name": "StringType()",
+        "city": "StringType()",
+        "region": "StringType()",
+        "restaurant_type": "StringType()",
+        "opening_date": "DateType()",
+        "performance_tier": "StringType()"
+      }
+    },
+    "menu_categories": {
+      "table": "menu_categories",
+      "rows": 11,
+      "seconds": 0.41,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": null,
+      "inferred_types": {
+        "category_id": "StringType()",
+        "category_name": "StringType()"
+      },
+      "explicit_types": {
+        "category_id": "StringType()",
+        "category_name": "StringType()"
+      }
+    },
+    "menu_items": {
+      "table": "menu_items",
+      "rows": 160,
+      "seconds": 0.41,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": null,
+      "inferred_types": {
+        "item_id": "StringType()",
+        "item_name": "StringType()",
+        "category_id": "StringType()",
+        "base_cost": "DoubleType()",
+        "base_price": "DoubleType()",
+        "is_active": "BooleanType()",
+        "introduced_date": "StringType()",
+        "demand_tier": "StringType()",
+        "wastage_tag": "StringType()",
+        "price_sensitivity_tag": "StringType()",
+        "seasonal_tag": "BooleanType()",
+        "promo_dependent_tag": "BooleanType()"
+      },
+      "explicit_types": {
+        "item_id": "StringType()",
+        "item_name": "StringType()",
+        "category_id": "StringType()",
+        "base_cost": "DoubleType()",
+        "base_price": "DoubleType()",
+        "is_active": "BooleanType()",
+        "introduced_date": "DateType()",
+        "demand_tier": "StringType()",
+        "wastage_tag": "StringType()",
+        "price_sensitivity_tag": "StringType()",
+        "seasonal_tag": "BooleanType()",
+        "promo_dependent_tag": "BooleanType()"
+      }
+    },
+    "pricing_history": {
+      "table": "pricing_history",
+      "rows": 314,
+      "seconds": 0.4,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": null,
+      "inferred_types": {
+        "price_id": "StringType()",
+        "item_id": "StringType()",
+        "price": "DoubleType()",
+        "effective_from": "StringType()",
+        "effective_to": "StringType()"
+      },
+      "explicit_types": {
+        "price_id": "StringType()",
+        "item_id": "StringType()",
+        "price": "DoubleType()",
+        "effective_from": "DateType()",
+        "effective_to": "DateType()"
+      }
+    },
+    "customers": {
+      "table": "customers",
+      "rows": 4000,
+      "seconds": 0.35,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": null,
+      "inferred_types": {
+        "customer_id": "StringType()",
+        "home_city": "StringType()",
+        "signup_date": "StringType()",
+        "preferred_channel": "StringType()",
+        "true_segment": "StringType()"
+      },
+      "explicit_types": {
+        "customer_id": "StringType()",
+        "home_city": "StringType()",
+        "signup_date": "DateType()",
+        "preferred_channel": "StringType()",
+        "true_segment": "StringType()"
+      }
+    },
+    "promotions": {
+      "table": "promotions",
+      "rows": 12,
+      "seconds": 0.31,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": null,
+      "inferred_types": {
+        "promotion_id": "StringType()",
+        "promotion_name": "StringType()",
+        "scope": "StringType()",
+        "target_id": "StringType()",
+        "discount_pct": "DoubleType()",
+        "start_date": "StringType()",
+        "end_date": "StringType()",
+        "channel": "StringType()",
+        "is_trap_flag": "BooleanType()"
+      },
+      "explicit_types": {
+        "promotion_id": "StringType()",
+        "promotion_name": "StringType()",
+        "scope": "StringType()",
+        "target_id": "StringType()",
+        "discount_pct": "DoubleType()",
+        "start_date": "DateType()",
+        "end_date": "DateType()",
+        "channel": "StringType()",
+        "is_trap_flag": "BooleanType()"
+      }
+    },
+    "orders": {
+      "table": "orders",
+      "rows": 9090,
+      "seconds": 0.38,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": "order month (_month)",
+      "inferred_types": {
+        "order_id": "StringType()",
+        "customer_id": "StringType()",
+        "restaurant_id": "StringType()",
+        "order_datetime": "StringType()",
+        "channel": "StringType()",
+        "promotion_id": "StringType()",
+        "status": "StringType()",
+        "total_amount": "DoubleType()"
+      },
+      "explicit_types": {
+        "order_id": "StringType()",
+        "customer_id": "StringType()",
+        "restaurant_id": "StringType()",
+        "order_datetime": "TimestampType()",
+        "channel": "StringType()",
+        "promotion_id": "StringType()",
+        "status": "StringType()",
+        "total_amount": "DoubleType()"
+      }
+    },
+    "order_items": {
+      "table": "order_items",
+      "rows": 24950,
+      "seconds": 0.45,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": "order_id",
+      "inferred_types": {
+        "order_item_id": "StringType()",
+        "order_id": "StringType()",
+        "item_id": "StringType()",
+        "quantity": "IntegerType()",
+        "unit_price": "DoubleType()",
+        "discount_pct": "DoubleType()",
+        "promotion_id": "StringType()",
+        "line_total": "DoubleType()"
+      },
+      "explicit_types": {
+        "order_item_id": "StringType()",
+        "order_id": "StringType()",
+        "item_id": "StringType()",
+        "quantity": "IntegerType()",
+        "unit_price": "DoubleType()",
+        "discount_pct": "DoubleType()",
+        "promotion_id": "StringType()",
+        "line_total": "DoubleType()"
+      }
+    },
+    "ratings": {
+      "table": "ratings",
+      "rows": 6030,
+      "seconds": 0.27,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": null,
+      "inferred_types": {
+        "rating_id": "StringType()",
+        "customer_id": "StringType()",
+        "item_id": "StringType()",
+        "restaurant_id": "StringType()",
+        "order_id": "StringType()",
+        "rating": "IntegerType()",
+        "review_date": "StringType()"
+      },
+      "explicit_types": {
+        "rating_id": "StringType()",
+        "customer_id": "StringType()",
+        "item_id": "StringType()",
+        "restaurant_id": "StringType()",
+        "order_id": "StringType()",
+        "rating": "IntegerType()",
+        "review_date": "DateType()"
+      }
+    },
+    "inventory": {
+      "table": "inventory",
+      "rows": 144000,
+      "seconds": 0.46,
+      "input_partitions": 2,
+      "output_partitions": 2,
+      "partitioned_by": "restaurant_id",
+      "inferred_types": {
+        "inventory_id": "StringType()",
+        "restaurant_id": "StringType()",
+        "item_id": "StringType()",
+        "date": "StringType()",
+        "stock_level": "IntegerType()",
+        "consumed_qty": "IntegerType()",
+        "replenished_qty": "IntegerType()"
+      },
+      "explicit_types": {
+        "inventory_id": "StringType()",
+        "restaurant_id": "StringType()",
+        "item_id": "StringType()",
+        "date": "DateType()",
+        "stock_level": "IntegerType()",
+        "consumed_qty": "IntegerType()",
+        "replenished_qty": "IntegerType()"
+      }
+    },
+    "wastage": {
+      "table": "wastage",
+      "rows": 4000,
+      "seconds": 0.23,
+      "input_partitions": 1,
+      "output_partitions": 1,
+      "partitioned_by": null,
+      "inferred_types": {
+        "wastage_id": "StringType()",
+        "restaurant_id": "StringType()",
+        "item_id": "StringType()",
+        "date": "StringType()",
+        "wasted_qty": "DoubleType()",
+        "wastage_cost": "DoubleType()",
+        "reason": "StringType()"
+      },
+      "explicit_types": {
+        "wastage_id": "StringType()",
+        "restaurant_id": "StringType()",
+        "item_id": "StringType()",
+        "date": "DateType()",
+        "wasted_qty": "DoubleType()",
+        "wastage_cost": "DoubleType()",
+        "reason": "StringType()"
+      }
+    }
+  },
+  "log": [
+    "ingested restaurants           20 rows in   4.43s (1 in-partitions -> 1 no repartition)",
+    "ingested menu_categories       11 rows in   0.41s (1 in-partitions -> 1 no repartition)",
+    "ingested menu_items           160 rows in   0.41s (1 in-partitions -> 1 no repartition)",
+    "ingested pricing_history      314 rows in   0.40s (1 in-partitions -> 1 no repartition)",
+    "ingested customers          4,000 rows in   0.35s (1 in-partitions -> 1 no repartition)",
+    "ingested promotions            12 rows in   0.31s (1 in-partitions -> 1 no repartition)",
+    "ingested orders             9,090 rows in   0.38s (1 in-partitions -> 1 partitioned by order month (_month))",
+    "ingested order_items       24,950 rows in   0.45s (1 in-partitions -> 1 partitioned by order_id)",
+    "ingested ratings            6,030 rows in   0.27s (1 in-partitions -> 1 no repartition)",
+    "ingested inventory        144,000 rows in   0.46s (2 in-partitions -> 2 partitioned by restaurant_id)",
+    "ingested wastage            4,000 rows in   0.23s (1 in-partitions -> 1 no repartition)"
+  ],
+  "capabilities": [
+    "explicit schema",
+    "schema inference",
+    "type validation",
+    "large-file loading",
+    "multi-file ingestion",
+    "partition handling"
+  ]
+}

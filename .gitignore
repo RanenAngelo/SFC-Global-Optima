@@ -11,3 +11,7 @@ Ranen/dineiq/dist/
 spark-warehouse/
 derby.log
 metastore_db/
+
+# Spark noise
+*.crc
+_SUCCESS

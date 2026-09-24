@@ -1,0 +1,26 @@
+{
+  "outputs": {
+    "fact_order_lines": {
+      "rows": 23589,
+      "partitioned_by": [
+        "order_month"
+      ]
+    },
+    "fact_ratings": {
+      "rows": 5942,
+      "partitioned_by": null
+    },
+    "fact_inventory": {
+      "rows": 144000,
+      "partitioned_by": null
+    },
+    "fact_wastage": {
+      "rows": 3969,
+      "partitioned_by": null
+    },
+    "dim_menu_price": {
+      "rows": 159,
+      "partitioned_by": null
+    }
+  }
+}

@@ -7,12 +7,12 @@ Rule: implement in this exact order; each step is COMPLETE only when implemented
 |------|-----------------|--------|
 | 1 | Restaurant Dataset Creation (11 related tables, §1.2 hint minimums) | ✅ COMPLETE (DEMO scale verified; FULL via DEMO_MODE=False) |
 | 2 | Big Data Storage (CSV/JSON/Parquet/RDB/NoSQL; ≥1 large processed Parquet) | ✅ COMPLETE (raw mirror; processed Parquet lands in Step 6) |
-| 3 | Data Ingestion Using Apache Spark (explicit schema, inference, type validation, large/multi-file, partitions) | PENDING |
-| 4 | Data Quality Assessment (14 issue classes) + Data Quality Report | PENDING |
-| 5 | Data Cleaning (clean/correct/remove/quarantine; record every decision) | PENDING |
-| 6 | Data Integration (Spark SQL/PySpark joins; 10 required relationships) | PENDING |
-| 7 | Feature Engineering (22 SRS features) | PENDING |
-| 8 | Exploratory Data Analysis (13 EDA outputs) | PENDING |
+| 3 | Data Ingestion Using Apache Spark (explicit schema, inference, type validation, large/multi-file, partitions) | ✅ COMPLETE |
+| 4 | Data Quality Assessment (14 issue classes) + Data Quality Report | ✅ COMPLETE |
+| 5 | Data Cleaning (clean/correct/remove/quarantine; record every decision) | ✅ COMPLETE |
+| 6 | Data Integration (Spark SQL/PySpark joins; 10 required relationships) | ✅ COMPLETE |
+| 7 | Feature Engineering (22 SRS features) | ✅ COMPLETE |
+| 8 | Exploratory Data Analysis (13 EDA outputs) | ✅ COMPLETE |
 | 9 | Menu Profitability Analysis (10 dimensions; volume alone ≠ success) | PENDING |
 | 10 | Menu Performance Classification (Profit/Volume Driver, Hidden Opportunity, Low Performer; data-driven) | PENDING |
 | 11 | Tricky Menu Performance Cases (10 difficult scenarios handled) | PENDING |

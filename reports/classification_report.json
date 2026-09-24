@@ -1,0 +1,28 @@
+{
+  "bands": {
+    "d_hi": 269.0,
+    "d_lo": 86.39999999999993,
+    "p_hi": 1802.9519999999998,
+    "p_lo": 324.74,
+    "w_hi": 44.935,
+    "r_good": 0.03444
+  },
+  "class_counts": {
+    "Low Performer": 95,
+    "Profit Driver": 25,
+    "Volume Driver": 24,
+    "Hidden Opportunity": 15
+  },
+  "tricky_counts": {
+    "loss_maker": 0,
+    "rare_gem": 0,
+    "wasteful_popular": 8,
+    "rated_but_unprofitable": 4,
+    "lowrated_highsales": 0,
+    "promo_dependent": 32,
+    "location_variance": 1,
+    "weekend_only": 0,
+    "seasonal": 0,
+    "new_item": 3
+  }
+}

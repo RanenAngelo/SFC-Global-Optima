@@ -13,9 +13,9 @@ Rule: implement in this exact order; each step is COMPLETE only when implemented
 | 6 | Data Integration (Spark SQL/PySpark joins; 10 required relationships) | ✅ COMPLETE |
 | 7 | Feature Engineering (22 SRS features) | ✅ COMPLETE |
 | 8 | Exploratory Data Analysis (13 EDA outputs) | ✅ COMPLETE |
-| 9 | Menu Profitability Analysis (10 dimensions; volume alone ≠ success) | PENDING |
-| 10 | Menu Performance Classification (Profit/Volume Driver, Hidden Opportunity, Low Performer; data-driven) | PENDING |
-| 11 | Tricky Menu Performance Cases (10 difficult scenarios handled) | PENDING |
+| 9 | Menu Profitability Analysis (10 dimensions; volume alone ≠ success) | ✅ COMPLETE |
+| 10 | Menu Performance Classification (Profit/Volume Driver, Hidden Opportunity, Low Performer; data-driven) | ✅ COMPLETE |
+| 11 | Tricky Menu Performance Cases (10 difficult scenarios handled) | ✅ COMPLETE |
 | 12 | Spark MLlib Model Development (≥3 algorithms trained & compared) | PENDING |
 | 13 | Independent Python Data Science Pipeline (same records, no Spark-result reuse) | PENDING |
 | 14 | Dual-Pipeline Result Verification (comparison report + agreement %) | PENDING |

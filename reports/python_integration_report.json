@@ -1,0 +1,19 @@
+{
+  "outputs": {
+    "fact_order_lines": {
+      "rows": 23589
+    },
+    "fact_ratings": {
+      "rows": 5942
+    },
+    "fact_inventory": {
+      "rows": 144000
+    },
+    "fact_wastage": {
+      "rows": 3969
+    },
+    "dim_menu_price": {
+      "rows": 159
+    }
+  }
+}

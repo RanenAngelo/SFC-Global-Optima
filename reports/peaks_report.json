@@ -1,0 +1,166 @@
+{
+  "peak_hours": [
+    12,
+    11,
+    13
+  ],
+  "peak_hour_orders": {
+    "12": 920,
+    "11": 895,
+    "13": 869,
+    "14": 852,
+    "18": 815
+  },
+  "peak_day": "Thursday",
+  "orders_by_weekday": {
+    "Monday": 1182,
+    "Tuesday": 1213,
+    "Wednesday": 1305,
+    "Thursday": 1324,
+    "Friday": 1195,
+    "Saturday": 1097,
+    "Sunday": 1154
+  },
+  "weekend_order_share": 0.269,
+  "peak_month": "2026-09",
+  "orders_by_month": {
+    "2025-08": 23,
+    "2025-09": 69,
+    "2025-10": 131,
+    "2025-11": 156,
+    "2025-12": 236,
+    "2026-01": 307,
+    "2026-02": 314,
+    "2026-03": 429,
+    "2026-04": 573,
+    "2026-05": 693,
+    "2026-06": 773,
+    "2026-07": 1081,
+    "2026-08": 1469,
+    "2026-09": 2216
+  },
+  "location_peaks": [
+    {
+      "restaurant_id": "R017",
+      "peak_hour": 11,
+      "order_id": 60
+    },
+    {
+      "restaurant_id": "R011",
+      "peak_hour": 13,
+      "order_id": 58
+    },
+    {
+      "restaurant_id": "R014",
+      "peak_hour": 12,
+      "order_id": 56
+    },
+    {
+      "restaurant_id": "R003",
+      "peak_hour": 20,
+      "order_id": 55
+    },
+    {
+      "restaurant_id": "R016",
+      "peak_hour": 18,
+      "order_id": 54
+    },
+    {
+      "restaurant_id": "R007",
+      "peak_hour": 12,
+      "order_id": 54
+    },
+    {
+      "restaurant_id": "R020",
+      "peak_hour": 13,
+      "order_id": 52
+    },
+    {
+      "restaurant_id": "R010",
+      "peak_hour": 11,
+      "order_id": 52
+    },
+    {
+      "restaurant_id": "R013",
+      "peak_hour": 12,
+      "order_id": 51
+    },
+    {
+      "restaurant_id": "R018",
+      "peak_hour": 12,
+      "order_id": 51
+    },
+    {
+      "restaurant_id": "R006",
+      "peak_hour": 11,
+      "order_id": 50
+    },
+    {
+      "restaurant_id": "R009",
+      "peak_hour": 11,
+      "order_id": 50
+    },
+    {
+      "restaurant_id": "R019",
+      "peak_hour": 11,
+      "order_id": 49
+    },
+    {
+      "restaurant_id": "R001",
+      "peak_hour": 11,
+      "order_id": 49
+    },
+    {
+      "restaurant_id": "R012",
+      "peak_hour": 12,
+      "order_id": 48
+    },
+    {
+      "restaurant_id": "R008",
+      "peak_hour": 21,
+      "order_id": 48
+    },
+    {
+      "restaurant_id": "R004",
+      "peak_hour": 12,
+      "order_id": 48
+    },
+    {
+      "restaurant_id": "R015",
+      "peak_hour": 18,
+      "order_id": 48
+    },
+    {
+      "restaurant_id": "R005",
+      "peak_hour": 13,
+      "order_id": 48
+    },
+    {
+      "restaurant_id": "R002",
+      "peak_hour": 21,
+      "order_id": 41
+    }
+  ],
+  "channel_peaks": [
+    {
+      "channel": "Dine-in",
+      "peak_hour": 12,
+      "order_id": 396
+    },
+    {
+      "channel": "Takeaway",
+      "peak_hour": 13,
+      "order_id": 202
+    },
+    {
+      "channel": "Website/App",
+      "peak_hour": 14,
+      "order_id": 194
+    },
+    {
+      "channel": "Third-Party Delivery",
+      "peak_hour": 11,
+      "order_id": 162
+    }
+  ]
+}

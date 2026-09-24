@@ -19,11 +19,11 @@ Rule: implement in this exact order; each step is COMPLETE only when implemented
 | 12 | Spark MLlib Model Development (≥3 algorithms trained & compared) | ✅ COMPLETE |
 | 13 | Independent Python Data Science Pipeline (same records, no Spark-result reuse) | ✅ COMPLETE |
 | 14 | Dual-Pipeline Result Verification (comparison report + agreement %) | ✅ COMPLETE |
-| 15 | Customer Segmentation (behavioral; 6 suggested segments) | PENDING |
-| 16 | RFM Analysis (Recency/Frequency/Monetary per customer) | PENDING |
-| 17 | Market-Basket Analysis (Support/Confidence/Lift) | PENDING |
-| 18 | Bundle and Cross-Sell Recommendations (association-rule evidence) | PENDING |
-| 19 | Peak-Period Analysis (hours/days/weekend/monthly/seasonal/location/channel) | PENDING |
+| 15 | Customer Segmentation (behavioral; 6 suggested segments) | ✅ COMPLETE |
+| 16 | RFM Analysis (Recency/Frequency/Monetary per customer) | ✅ COMPLETE |
+| 17 | Market-Basket Analysis (Support/Confidence/Lift) | ✅ COMPLETE |
+| 18 | Bundle and Cross-Sell Recommendations (association-rule evidence) | ✅ COMPLETE |
+| 19 | Peak-Period Analysis (hours/days/weekend/monthly/seasonal/location/channel) | ✅ COMPLETE |
 | 20 | Demand Forecasting (items/categories/locations; configurable horizons) | PENDING |
 | 21 | Time-Aware Model Validation (chronological split, no leakage) | ✅ COMPLETE |
 | 22 | Forecast Accuracy Evaluation (MAE/RMSE/MAPE/R²) | ✅ COMPLETE |

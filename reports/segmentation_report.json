@@ -1,0 +1,13 @@
+{
+  "customers": 3196,
+  "segments": {
+    "Occasional Customers": 1208,
+    "New Customers": 603,
+    "At-Risk Customers": 486,
+    "High-Value Loyal Customers": 430,
+    "Frequent Customers": 392,
+    "Promotion-Driven Customers": 77
+  },
+  "hidden_tag_agreement_pct": 38.14,
+  "note": "Agreement vs generator hidden tag is validation only; segments derive purely from RFM + behavior."
+}

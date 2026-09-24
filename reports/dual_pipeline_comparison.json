@@ -22,7 +22,7 @@
     "spark_mae": 0.8666,
     "python_mae": 0.7645,
     "pred_vs_pred_mae": 0.4035,
-    "pred_vs_pred_corr": NaN,
+    "pred_vs_pred_corr": null,
     "within_1_unit_pct": 99.31,
     "explanation": "Both regressors train independently (MLlib RandomForest vs sklearn HistGB) on equivalent lag/rolling features over the same chronological test cells. Residual gaps come from different tree ensembles and sparsity handling; sparse (item, restaurant, day) cells dominate the error mass on both sides."
   }

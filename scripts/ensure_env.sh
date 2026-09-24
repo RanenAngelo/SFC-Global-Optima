@@ -3,7 +3,7 @@
 # Usage: bash scripts/ensure_env.sh
 set -u
 MISSING=$(python3 - <<'EOF'
-mods = ["fastapi","uvicorn","sqlalchemy","pydantic","jose","passlib","pandas",
+mods = ["fastapi","uvicorn","sqlalchemy","pydantic","jose","bcrypt","pandas",
         "numpy","sklearn","scipy","pyspark","pyarrow","pytest","httpx",
         "openpyxl","jdk4py","multipart"]
 missing = []
@@ -21,7 +21,7 @@ if [ -z "$MISSING" ]; then
 fi
 echo "Installing missing: $MISSING"
 pip install --user --break-system-packages --quiet \
-  fastapi "uvicorn[standard]" sqlalchemy pydantic python-jose "passlib[bcrypt]" \
+  fastapi "uvicorn[standard]" sqlalchemy pydantic python-jose "bcrypt" \
   python-multipart pandas numpy scikit-learn scipy "pyspark==3.5.*" pyarrow \
   pytest httpx openpyxl "jdk4py==17.0.9.2"
 export JAVA_HOME=$(python3 -c "import jdk4py; print(jdk4py.JAVA_HOME)")

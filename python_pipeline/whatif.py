@@ -32,13 +32,17 @@ def _load(proc: Path):
 
 
 def _item_elasticity(elas: pd.DataFrame, item_id: str):
+    # Downward-sloping demand is enforced as a guardrail: a measured e >= 0
+    # contradicts demand theory and signals confounding (growth/promo overlap),
+    # so it is NEVER used raw — we fall back to unit-elastic and say so.
     ev = elas[(elas["item_id"] == item_id) & (elas["verdict"] != "insufficient_evidence")]
     if len(ev):
-        return float(ev.iloc[0]["elasticity"]), "item elasticity (measured)"
-    sig = elas[elas["verdict"] != "insufficient_evidence"]
-    if len(sig):
-        return float(sig["elasticity"].median()), "median measured elasticity (assumption)"
-    return -1.0, "unit elasticity fallback (assumption)"
+        e = float(ev.iloc[0]["elasticity"])
+        if e < -0.05:
+            return e, "item elasticity (measured)"
+        return -1.0, (f"measured e={e} unreliable (non-negative, likely confounded); "
+                       "unit-elastic fallback (assumption)")
+    return -1.0, "no measured elasticity for item; unit-elastic fallback (assumption)"
 
 
 def scenario_price(item_id: str, new_price: float, proc: Path = PROCESSED_DIR) -> dict:

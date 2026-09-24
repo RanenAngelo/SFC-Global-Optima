@@ -174,6 +174,14 @@ class PipelineRun(Base):
     message = Column(Text)
 
 
+class RecommendationState(Base):
+    __tablename__ = "recommendation_state"
+    rec_id = Column(String(16), primary_key=True)
+    state = Column(String(16), nullable=False, default="new")  # new|saved|dismissed|done
+    username = Column(String(64))
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
 class ModelRegistry(Base):
     __tablename__ = "model_registry"
     id = Column(Integer, primary_key=True, autoincrement=True)

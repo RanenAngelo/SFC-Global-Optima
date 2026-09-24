@@ -52,9 +52,9 @@ Rule: implement in this exact order; each step is COMPLETE only when implemented
 | 45 | Wastage Dashboard (6 elements) | PENDING |
 | 46 | Forecast Dashboard (5 comparisons) | PENDING |
 | 47 | Dual-Pipeline Comparison Dashboard (6 elements) | PENDING |
-| 48 | Search and Filtering (11 filter types) | PENDING |
-| 49 | Downloadable Reports (12 report types) | PENDING |
-| 50 | Data Export (CSV/Excel-compatible, permission-gated) | PENDING |
+| 48 | Search and Filtering (11 filter types) | ✅ COMPLETE (API; UI wiring next) |
+| 49 | Downloadable Reports (12 report types) | ✅ COMPLETE (API; UI wiring next) |
+| 50 | Data Export (CSV/Excel-compatible, permission-gated) | ✅ COMPLETE (API; UI wiring next) |
 
 Cross-cutting (SRS §1.6 Functional Requirements i–lxvi, §1.7 NFRs, §1.8 integrity):
 auth + RBAC (i–ii), entity management (iii–xi), partitioning (xvii), model versioning (lxii),

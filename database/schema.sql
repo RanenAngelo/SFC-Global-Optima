@@ -65,6 +65,14 @@ CREATE TABLE promotions (
 	PRIMARY KEY (promotion_id)
 );
 
+CREATE TABLE recommendation_state (
+	rec_id VARCHAR(16) NOT NULL, 
+	state VARCHAR(16) NOT NULL, 
+	username VARCHAR(64), 
+	updated_at DATETIME, 
+	PRIMARY KEY (rec_id)
+);
+
 CREATE TABLE restaurants (
 	restaurant_id VARCHAR(16) NOT NULL, 
 	restaurant_name VARCHAR(128) NOT NULL, 

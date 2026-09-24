@@ -123,12 +123,14 @@ def compare_demand() -> dict:
                       suffixes=("", "_py"))
     cmp_df["abs_diff"] = (cmp_df["spark_pred"] - cmp_df["py_pred"]).abs()
     within1 = float((cmp_df["abs_diff"] <= 1.0).mean())
+    _corr = cmp_df[["spark_pred", "py_pred"]].corr().iloc[0, 1]
+    _corr = round(float(_corr), 4) if pd.notnull(_corr) else None
     report = {
         "n_unseen": len(cmp_df),
         "spark_mae": round(float(mean_absolute_error(cmp_df["actual"], cmp_df["spark_pred"])), 4),
         "python_mae": round(float(mean_absolute_error(cmp_df["actual"], cmp_df["py_pred"])), 4),
         "pred_vs_pred_mae": round(float(cmp_df["abs_diff"].mean()), 4),
-        "pred_vs_pred_corr": round(float(cmp_df[["spark_pred", "py_pred"]].corr().iloc[0, 1]), 4),
+        "pred_vs_pred_corr": _corr,
         "within_1_unit_pct": round(within1 * 100, 2),
         "explanation": (
             "Both regressors train independently (MLlib RandomForest vs sklearn "

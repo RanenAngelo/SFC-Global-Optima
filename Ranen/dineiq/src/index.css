@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-[-0.015em];
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d9d0c4 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #ded5c8;
+    border-radius: 99px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #c9bdac;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+  [x-cloak] {
+    display: none;
+  }
+}
+
+html[data-theme='warm'] {
+  --canvas: #f4efe8;
+}
+html[data-theme='warm'] body {
+  background: #f4efe8;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-white shadow-card;
+  }
+  .card-pad {
+    @apply p-4 sm:p-5;
+  }
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.09em] text-ink-faint;
+  }
+  .metric {
+    @apply font-display text-2xl font-semibold tabular-nums tracking-[-0.02em] text-ink;
+  }
+  .focus-ring {
+    @apply outline-none ring-ember-400/60 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white;
+  }
+  .divider {
+    @apply h-px w-full bg-line;
+  }
+  .row-hover {
+    @apply transition-colors hover:bg-canvas/70;
+  }
+  .skeleton {
+    @apply relative overflow-hidden rounded-md bg-line/70;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+    animation: shimmer 1.4s infinite;
+  }
+  .link-underline {
+    @apply underline decoration-line-strong decoration-1 underline-offset-4 transition-colors hover:decoration-ember-500;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Recharts polish */
+.recharts-cartesian-axis-tick text {
+  font-size: 11px;
+  fill: #9c948a;
+  font-weight: 500;
+}
+.recharts-legend-item-text {
+  font-size: 12px;
+  color: #726b62 !important;
+  font-weight: 500;
+}
+.recharts-surface {
+  overflow: visible;
+}
+.recharts-default-tooltip {
+  border-radius: 12px !important;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

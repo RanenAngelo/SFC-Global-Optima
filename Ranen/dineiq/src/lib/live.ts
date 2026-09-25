@@ -1209,3 +1209,138 @@ export function useForecastData(grain: 'item' | 'restaurant', entityId: string |
 
   return { data: shaped, loading, error, refetch }
 }
+
+/* ───────────────────────────── Inventory & wastage ───────────────────────────── */
+
+export type StockRow = {
+  id: string
+  itemId: string
+  itemName: string
+  restaurantId: string
+  restaurantName: string
+  date: string
+  stock: number
+  consumed: number
+  replenished: number
+}
+
+export type RiskCard = {
+  itemId: string
+  itemName: string
+  band: string
+  score: number
+  unitsSold: number
+  recentWaste: number
+  forecast28: number
+}
+
+export function useInventoryData() {
+  const inv = useApi<{
+    wastage_summary: { item_id: string; item_name: string; category_id: string; wasted_qty: number; wastage_cost: number; incidents: number; units_sold: number; waste_per_unit_sold: number }[]
+    wastage_risk: { item_id: string; popularity: number; units_sold: number; recent_waste: number; forecast_28: number; risk_score: number; risk_band: string }[]
+    risk_bands: { risk_band: string; n: number }[]
+    trend: { d: string; qty: number; cost: number }[]
+    by_reason: { reason: string; qty: number; cost: number }[]
+    by_location: { restaurant_id: string; city: string; qty: number; cost: number }[]
+    stock: { restaurant_id: string; item_id: string; date: string; stock_level: number; consumed_qty: number; replenished_qty: number }[]
+  }>('/inventory')
+  const items = useApi<{ item_id: string; item_name: string; category_name: string }[]>('/menu/items')
+  const { options: meta } = useMeta()
+
+  const loading = inv.loading || items.loading
+  const error = inv.error ?? items.error
+  const refetch = () => {
+    inv.refetch()
+    items.refetch()
+  }
+
+  const shaped = useMemo(() => {
+    if (!inv.data) return null
+    const itemName = (id: string) => (items.data ?? []).find((m) => m.item_id === id)?.item_name ?? id
+    const restName = (id: string) => meta?.restaurants.find((r) => r.restaurant_id === id)?.restaurant_name ?? id
+    const catName = (id: string) => meta?.categories.find((c) => c.category_id === id)?.category_name ?? id
+
+    const stock: StockRow[] = inv.data.stock.map((s, i) => ({
+      id: `${s.restaurant_id}-${s.item_id}-${i}`,
+      itemId: s.item_id,
+      itemName: itemName(s.item_id),
+      restaurantId: s.restaurant_id,
+      restaurantName: restName(s.restaurant_id),
+      date: s.date.slice(0, 10),
+      stock: s.stock_level,
+      consumed: s.consumed_qty,
+      replenished: s.replenished_qty,
+    }))
+
+    const risks: RiskCard[] = inv.data.wastage_risk.map((r) => ({
+      itemId: r.item_id,
+      itemName: itemName(r.item_id),
+      band: r.risk_band,
+      score: Math.round(r.risk_score * 1000) / 1000,
+      unitsSold: r.units_sold,
+      recentWaste: Math.round(r.recent_waste * 10) / 10,
+      forecast28: Math.round(r.forecast_28 * 10) / 10,
+    }))
+    const bandCount = (b: string) => inv.data?.risk_bands.find((x) => x.risk_band === b)?.n ?? 0
+
+    const totalCost = inv.data.trend.reduce((s, t) => s + t.cost, 0)
+    const totalQty = inv.data.trend.reduce((s, t) => s + t.qty, 0)
+
+    const byCat: Record<string, number> = {}
+    for (const w of inv.data.wastage_summary) {
+      const c = catName(w.category_id)
+      byCat[c] = (byCat[c] ?? 0) + w.wastage_cost
+    }
+    const catBars = Object.entries(byCat)
+      .map(([category, cost]) => ({ category, cost: Math.round(cost * 100) / 100 }))
+      .sort((a, b) => b.cost - a.cost)
+
+    const byMonth: Record<string, { qty: number; cost: number }> = {}
+    for (const t of inv.data.trend) {
+      const m = t.d.slice(0, 7)
+      const e = (byMonth[m] ??= { qty: 0, cost: 0 })
+      e.qty += t.qty
+      e.cost += t.cost
+    }
+    const trendMonthly = Object.entries(byMonth)
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([m, v]) => ({ month: m, waste: Math.round(v.qty * 10) / 10, cost: Math.round(v.cost * 100) / 100 }))
+
+    const locBars = inv.data.by_location.map((l) => ({
+      location: restName(l.restaurant_id),
+      cost: Math.round(l.cost * 100) / 100,
+    }))
+
+    const consByItem: Record<string, { name: string; consumed: number; replenished: number }> = {}
+    for (const s of inv.data.stock) {
+      const e = (consByItem[s.item_id] ??= { name: itemName(s.item_id), consumed: 0, replenished: 0 })
+      e.consumed += s.consumed_qty
+      e.replenished += s.replenished_qty
+    }
+    const consRows = Object.values(consByItem)
+      .sort((a, b) => b.consumed - a.consumed)
+      .slice(0, 10)
+      .map((e) => ({ item: e.name.length > 22 ? `${e.name.slice(0, 21)}…` : e.name, consumed: e.consumed, replenished: e.replenished }))
+
+    const topWaste = [...inv.data.wastage_summary].sort((a, b) => b.wastage_cost - a.wastage_cost).slice(0, 5)
+    const maxWaste = topWaste[0]?.wastage_cost ?? 1
+
+    return {
+      stock,
+      risks,
+      bandCount,
+      totalCost,
+      totalQty,
+      catBars,
+      trendMonthly,
+      locBars,
+      consRows,
+      topWaste,
+      maxWaste,
+      reasons: inv.data.by_reason,
+      locationsAffected: inv.data.by_location.length,
+    }
+  }, [inv.data, items.data, meta])
+
+  return { data: shaped, loading, error, refetch }
+}

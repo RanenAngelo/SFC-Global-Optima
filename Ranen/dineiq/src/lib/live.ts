@@ -825,3 +825,227 @@ export function useIntelDetail(itemId: string | null) {
   const q = useApi<IntelDetail>(itemId ? `/menu-intelligence/${itemId}` : null, { enabled: !!itemId })
   return { detail: q.data ?? null, loading: q.loading }
 }
+
+/* ───────────────────────────── Customers ───────────────────────────── */
+
+export const SEGMENT_META: Record<string, { color: string; desc: string; play: string }> = {
+  'High-Value Loyal Customers': {
+    color: '#4A7139',
+    desc: 'Top RFM scorers with the highest lifetime value. The core of repeat revenue.',
+    play: 'Protect and reward',
+  },
+  'Frequent Customers': {
+    color: '#2F6FA8',
+    desc: 'Order often with mid-range baskets. The most responsive to bundles.',
+    play: 'Grow basket with bundles',
+  },
+  'Promotion-Driven Customers': {
+    color: '#C08A16',
+    desc: 'Buy mainly on offer. Valuable volume but discount-reliant.',
+    play: 'Reduce discount reliance',
+  },
+  'At-Risk Customers': {
+    color: '#96352C',
+    desc: 'Were valuable but have gone quiet. Highest win-back priority.',
+    play: 'Win-back campaign',
+  },
+  'New Customers': {
+    color: '#B54E17',
+    desc: 'First orders in the recent window. Habits are still forming.',
+    play: 'Onboarding sequence',
+  },
+  'Occasional Customers': {
+    color: '#726B62',
+    desc: 'Order rarely with small baskets. The long tail of the base.',
+    play: 'Re-activate with offers',
+  },
+}
+
+export type LiveCustomer = {
+  id: string
+  segment: string
+  color: string
+  orders: number
+  spend: number
+  aov: number
+  recency: number
+  lastOrder: string
+  rfm: string
+  R: number
+  F: number
+  M: number
+  tenure: number
+  basket: number
+  promoSens: number
+  channel: string
+  favCat: string
+  joined: string
+}
+
+export type SegmentCard = {
+  key: string
+  name: string
+  color: string
+  desc: string
+  play: string
+  count: number
+  share: number
+  aov: number
+  avgOrders: number
+  totalValue: number
+  meanR: number
+  meanF: number
+  meanM: number
+}
+
+export function useCustomersData() {
+  const f = useApiFilters()
+  const { options: meta } = useMeta()
+  const analytics = useApi<{
+    segments: { segment: string; n: number; avg_value: number; total_value: number }[]
+    rfm: { R: number; F: number; M: number; n: number }[]
+    high_value: { customer_id: string }[]
+    at_risk: { customer_id: string }[]
+    churn_bands: { band: string; n: number }[]
+    trends: { m: string; active: number }[]
+  }>('/customers/analytics', { enabled: f.ready })
+  const list = useApi<{
+    rows: {
+      customer_id: string
+      segment: string
+      recency_days: number
+      frequency: number
+      monetary: number
+      aov: number
+      basket_size: number
+      tenure_days: number
+      R: number
+      F: number
+      M: number
+      RFM: string
+      promo_sensitivity: number
+      channel_preference: string | null
+      favorite_category: string | null
+      signup_date: string
+    }[]
+    total: number
+  }>('/customers', { params: { page_size: 5000 }, enabled: f.ready })
+  const over = useApi<OverviewOut>('/dashboard/overview', { params: f.params, enabled: f.ready })
+
+  const loading = analytics.loading || list.loading || over.loading
+  const error = analytics.error ?? list.error ?? over.error
+  const refetch = () => {
+    analytics.refetch()
+    list.refetch()
+    over.refetch()
+  }
+
+  const shaped = useMemo(() => {
+    if (!analytics.data || !list.data) return null
+    const dataMax = (meta?.date_range?.dmax as string | undefined)?.slice(0, 10) ?? null
+    const lastOrderOf = (recency: number) => (dataMax ? fmtDate(addDaysISO(dataMax, -recency)) : `${recency}d ago`)
+
+    const customers: LiveCustomer[] = list.data.rows.map((r) => ({
+      id: r.customer_id,
+      segment: r.segment,
+      color: SEGMENT_META[r.segment]?.color ?? '#726B62',
+      orders: r.frequency,
+      spend: Math.round(r.monetary * 100) / 100,
+      aov: Math.round(r.aov * 100) / 100,
+      recency: r.recency_days,
+      lastOrder: lastOrderOf(r.recency_days),
+      rfm: r.RFM,
+      R: r.R,
+      F: r.F,
+      M: r.M,
+      tenure: r.tenure_days,
+      basket: Math.round(r.basket_size * 10) / 10,
+      promoSens: Math.round(r.promo_sensitivity * 100),
+      channel: r.channel_preference ?? '—',
+      favCat: r.favorite_category ?? '—',
+      joined: fmtDate(r.signup_date),
+    }))
+
+    const bySeg: Record<string, LiveCustomer[]> = {}
+    for (const c of customers) (bySeg[c.segment] ??= []).push(c)
+    const total = customers.length
+    const segCards: SegmentCard[] = analytics.data.segments.map((s) => {
+      const members = bySeg[s.segment] ?? []
+      const mean = (k: 'aov' | 'orders' | 'R' | 'F' | 'M') =>
+        members.length ? members.reduce((t, c) => t + c[k], 0) / members.length : 0
+      return {
+        key: s.segment,
+        name: s.segment,
+        color: SEGMENT_META[s.segment]?.color ?? '#726B62',
+        desc: SEGMENT_META[s.segment]?.desc ?? 'Pipeline segment.',
+        play: SEGMENT_META[s.segment]?.play ?? 'Review manually',
+        count: s.n,
+        share: total ? Math.round((s.n / total) * 1000) / 10 : 0,
+        aov: Math.round(mean('aov') * 100) / 100,
+        avgOrders: Math.round(mean('orders') * 10) / 10,
+        totalValue: Math.round(s.total_value * 100) / 100,
+        meanR: Math.round(mean('R') * 100) / 100,
+        meanF: Math.round(mean('F') * 100) / 100,
+        meanM: Math.round(mean('M') * 100) / 100,
+      }
+    })
+
+    const segValue = [...segCards]
+      .sort((a, b) => b.totalValue - a.totalValue)
+      .map((s) => ({ segment: s.name.replace(' Customers', ''), value: s.totalValue, color: s.color }))
+
+    const radarKeys = ['High-Value Loyal Customers', 'Promotion-Driven Customers', 'At-Risk Customers', 'New Customers']
+    const radar = [
+      { subject: 'Recency', key: 'meanR' },
+      { subject: 'Frequency', key: 'meanF' },
+      { subject: 'Monetary', key: 'meanM' },
+    ].map((row) => {
+      const o: Record<string, string | number> = { subject: row.subject }
+      for (const name of radarKeys) {
+        const card = segCards.find((c) => c.name === name)
+        o[name.replace(' Customers', '')] = card ? (card[row.key as 'meanR' | 'meanF' | 'meanM'] as number) : 0
+      }
+      return o
+    })
+
+    const catTotal = (over.data?.category_revenue ?? []).reduce((s, c) => s + c.revenue, 0)
+    const favCats = (over.data?.category_revenue ?? [])
+      .map((c) => ({
+        category: c.category_name,
+        value: catTotal ? Math.round((c.revenue / catTotal) * 1000) / 10 : 0,
+      }))
+      .sort((a, b) => b.value - a.value)
+    const channelBars = (over.data?.channels ?? []).map((c) => ({ channel: c.channel, orders: c.orders }))
+
+    const totalRevenue = analytics.data.segments.reduce((s, g) => s + g.total_value, 0)
+    const hv = analytics.data.segments.find((s) => s.segment === 'High-Value Loyal Customers')
+    const ar = analytics.data.segments.find((s) => s.segment === 'At-Risk Customers')
+
+    return {
+      customers,
+      total: list.data.total,
+      segCards,
+      radar,
+      segValue,
+      favCats,
+      channelBars,
+      trends: (analytics.data.trends ?? []).map((t) => ({ m: t.m, active: t.active })),
+      timelineId: analytics.data.high_value?.[0]?.customer_id ?? customers[0]?.id ?? null,
+      kpis: {
+        total,
+        avgValue: total ? totalRevenue / total : 0,
+        avgOrders: total ? customers.reduce((s, c) => s + c.orders, 0) / total : 0,
+        hvCount: hv?.n ?? 0,
+        arCount: ar?.n ?? 0,
+        churnBands: analytics.data.churn_bands ?? [],
+      },
+    }
+  }, [analytics.data, list.data, over.data, meta])
+
+  return { data: shaped, loading, error, refetch }
+}
+
+export function useCustomerDetail(customerId: string | null) {
+  const q = useApi<CustomerProfile>(customerId ? `/customers/${customerId}` : null, { enabled: !!customerId })
+  return { detail: q.data ?? null, loading: q.loading }
+}

@@ -1,46 +1,52 @@
 import React, { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Button, Card, CardHeader, Icon, SearchInput, Select, Tabs, Tooltip, cn } from '../../components/ui/primitives'
+import { Badge, Button, Card, CardHeader, Icon, SearchInput, Select, Tabs, cn } from '../../components/ui/primitives'
 import { Column, DataTable } from '../../components/ui/table'
-import { Drawer } from '../../components/ui/overlay'
+import { Drawer, useToast } from '../../components/ui/overlay'
 import { PageHeader } from '../../components/admin/PageHeader'
-import { AreaSeries, BarSeries, ChartCard, DonutChart, LineSeries, RadarSeries, TrendChart } from '../../components/charts'
-import { DemoNote, KpiCard, MetricRow, Progress, ProgressRing } from '../../components/shared'
-import {
-  CUSTOMERS, CUSTOMER_KPIS, CUSTOMER_TIMELINE, FAVOURITE_CATEGORIES, SEGMENTS, SEGMENT_TREND, TIME_PREFERENCE, type Customer,
-} from '../../lib/data/analytics'
+import { AreaSeries, BarSeries, ChartCard, DonutChart, RadarSeries } from '../../components/charts'
+import { KpiCard, LiveNote, MetricRow, Progress, ProgressRing } from '../../components/shared'
+import { PageError, PageLoader, fmtDate, timeAgoISO } from '../../lib/api'
+import { useCustomerDetail, useCustomersData, type LiveCustomer } from '../../lib/live'
 import { money, num } from '../../lib/utils'
-
-const SEG_COLOR: Record<string, string> = Object.fromEntries(SEGMENTS.map((s) => [s.name, s.color]))
 
 export default function Customers() {
   const [tab, setTab] = useState('segments')
   const [query, setQuery] = useState('')
   const [segment, setSegment] = useState('all')
-  const [active, setActive] = useState<Customer | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [active, setActive] = useState<LiveCustomer | null>(null)
+  const { data, loading, error, refetch } = useCustomersData()
+  const { detail } = useCustomerDetail(active?.id ?? null)
+  const { detail: timelineDetail } = useCustomerDetail(data?.timelineId ?? null)
+  const { push } = useToast()
 
   const rows = useMemo(() => {
-    let r = CUSTOMERS
+    let r = data?.customers ?? []
     if (segment !== 'all') r = r.filter((c) => c.segment === segment)
     const q = query.trim().toLowerCase()
-    if (q) r = r.filter((c) => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.phone.includes(q))
+    if (q) r = r.filter((c) => c.id.toLowerCase().includes(q))
     return r
-  }, [segment, query])
+  }, [data, segment, query])
 
-  const columns: Column<Customer>[] = [
+  if (loading && !data) return <PageLoader />
+  if (error || !data) return <PageError message={error ?? 'No customer data.'} onRetry={refetch} />
+
+  const columns: Column<LiveCustomer>[] = [
     {
-      key: 'name',
+      key: 'id',
       header: 'Customer',
-      sort: (a, b) => a.name.localeCompare(b.name),
+      sort: (a, b) => a.id.localeCompare(b.id),
       render: (c) => (
         <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-canvas-deep text-[12px] font-bold text-ink-soft">
-            {c.name.split(' ').map((n) => n[0]).join('')}
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+            style={{ background: c.color }}
+          >
+            {c.id.replace('CUST', '').slice(0, 2)}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-[13px] font-semibold text-ink">{c.name}</p>
-            <p className="truncate text-[11.5px] text-ink-muted">{c.email}</p>
+            <p className="truncate font-mono text-[12.5px] font-semibold text-ink">{c.id}</p>
+            <p className="truncate text-[11.5px] text-ink-muted">{c.segment.replace(' Customers', '')}</p>
           </div>
         </div>
       ),
@@ -50,8 +56,8 @@ export default function Customers() {
       header: 'Segment',
       sort: (a, b) => a.segment.localeCompare(b.segment),
       render: (c) => (
-        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold" style={{ color: SEG_COLOR[c.segment] }}>
-          <span className="h-2 w-2 rounded-full" style={{ background: SEG_COLOR[c.segment] }} />
+        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold" style={{ color: c.color }}>
+          <span className="h-2 w-2 rounded-full" style={{ background: c.color }} />
           {c.segment.replace(' Customers', '')}
         </span>
       ),
@@ -65,7 +71,7 @@ export default function Customers() {
       header: 'RFM',
       align: 'center',
       hideBelow: 'md',
-      headerTip: 'Illustrative recency–frequency–monetary score',
+      headerTip: 'Live recency–frequency–monetary score from the segmentation pipeline',
       render: (c) => <span className="font-mono text-[12px] font-bold text-ink">{c.rfm}</span>,
     },
     {
@@ -87,22 +93,30 @@ export default function Customers() {
     },
   ]
 
+  const k = data.kpis
+  const churnCritical = k.churnBands.find((b) => b.band === 'critical')?.n ?? 0
+
   return (
     <div>
       <PageHeader
         eyebrow="MenuMatrix Dining Intelligence"
         title="Customer Intelligence"
-        subtitle="Segments, RFM distribution and behaviour patterns across the demo customer base."
-        demoNote="All segments, RFM scores and metrics are static UI examples. No clustering or scoring algorithm is used."
-        onRefresh={() => {
-          setLoading(true)
-          setTimeout(() => setLoading(false), 800)
-        }}
+        subtitle="Live RFM segments, behaviour patterns and profiles across the customer base."
+        demoNote="Live pipeline segments and RFM scores — customer records are anonymized IDs by design."
+        onRefresh={refetch}
+        dataset="customer_segmentation"
       />
 
       <div className="mb-5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {CUSTOMER_KPIS.map((k) => (
-          <KpiCard key={k.label} label={k.label} value={k.value} change={k.change} icon={k.icon} tone={k.tone} compare="vs previous period" />
+        {[
+          { label: 'Total customers', value: num(k.total), icon: 'Users', tone: 'sky', compare: 'profiled base' },
+          { label: 'Avg lifetime value', value: money(k.avgValue), icon: 'Wallet', tone: 'ember', compare: 'per customer' },
+          { label: 'Avg orders', value: k.avgOrders.toFixed(1), icon: 'ReceiptText', tone: 'gold', compare: 'per customer' },
+          { label: 'High-value loyal', value: num(k.hvCount), icon: 'Crown', tone: 'sage', compare: `${k.total ? ((k.hvCount / k.total) * 100).toFixed(1) : 0}% of base` },
+          { label: 'At-risk', value: num(k.arCount), icon: 'AlertTriangle', tone: 'clay', compare: 'need win-back' },
+          { label: 'Critical churn risk', value: num(churnCritical), icon: 'TrendingDown', tone: 'clay', compare: 'highest band' },
+        ].map((c) => (
+          <KpiCard key={c.label} label={c.label} value={c.value} icon={c.icon} tone={c.tone} compare={c.compare} />
         ))}
       </div>
 
@@ -120,32 +134,29 @@ export default function Customers() {
       {tab === 'segments' && (
         <div className="mt-5 space-y-4">
           <div className="grid gap-4 xl:grid-cols-[1fr_1.3fr]">
-            <ChartCard title="Segment distribution" subtitle="Share of demo customer base" height={300}>
+            <ChartCard title="Segment distribution" subtitle="Share of live customer base" height={300}>
               <DonutChart
-                data={SEGMENTS.map((s) => ({ name: s.name.replace(' Customers', ''), value: s.share, color: s.color }))}
-                centerValue="2,914"
+                data={data.segCards.map((s) => ({ name: s.name.replace(' Customers', ''), value: s.share, color: s.color }))}
+                centerValue={num(k.total)}
                 centerLabel="Customers"
                 valueFormat={(v) => `${v}%`}
               />
             </ChartCard>
 
-            <ChartCard title="Segment growth" subtitle="Demo customer counts over six months" height={300}>
-              <TrendChart
-                data={SEGMENT_TREND}
-                xKey="month"
-                series={[
-                  { key: 'loyal', label: 'High-value loyal', color: '#4A7139', type: 'area' },
-                  { key: 'frequent', label: 'Frequent', color: '#2F6FA8', type: 'line' },
-                  { key: 'promo', label: 'Promotion-driven', color: '#C08A16', type: 'line' },
-                  { key: 'atRisk', label: 'At-risk', color: '#96352C', type: 'line' },
-                ]}
-                valueFormat={(v) => `${num(v)} customers`}
+            <ChartCard title="Segment value" subtitle="Lifetime revenue by segment — live" height={300}>
+              <BarSeries
+                data={data.segValue}
+                xKey="segment"
+                layout="vertical"
+                bars={[{ key: 'value', label: 'Revenue', color: '#B54E17' }]}
+                valueFormat={(v) => money(v, { compact: true })}
+                showLegend={false}
               />
             </ChartCard>
           </div>
 
           <div className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-3">
-            {SEGMENTS.map((s) => (
+            {data.segCards.map((s) => (
               <Card key={s.key} className="overflow-hidden">
                 <div className="flex items-start justify-between gap-3 p-4 pb-3">
                   <div className="min-w-0">
@@ -163,8 +174,8 @@ export default function Customers() {
                 <div className="grid grid-cols-3 divide-x divide-line border-t border-line">
                   {[
                     { l: 'Avg order', v: money(s.aov) },
-                    { l: 'Orders / mo', v: s.freq.toFixed(1) },
-                    { l: 'Est. CLV', v: money(s.clv, { compact: true }) },
+                    { l: 'Avg orders', v: s.avgOrders.toFixed(1) },
+                    { l: 'Total value', v: money(s.totalValue, { compact: true }) },
                   ].map((m) => (
                     <div key={m.l} className="px-3 py-2.5">
                       <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{m.l}</p>
@@ -180,15 +191,9 @@ export default function Customers() {
 
       {tab === 'rfm' && (
         <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1.3fr]">
-          <ChartCard title="RFM profile by segment" subtitle="Illustrative scores, 1–9 scale" height={330}>
+          <ChartCard title="RFM profile by segment" subtitle="Live mean scores, 1–5 scale" height={330}>
             <RadarSeries
-              data={[
-                { subject: 'Recency', 'High-Value Loyal': 9, 'Promotion-Driven': 5, 'At-Risk': 2, New: 6 },
-                { subject: 'Frequency', 'High-Value Loyal': 9, 'Promotion-Driven': 5, 'At-Risk': 3, New: 1 },
-                { subject: 'Monetary', 'High-Value Loyal': 9, 'Promotion-Driven': 4, 'At-Risk': 6, New: 3 },
-                { subject: 'Basket size', 'High-Value Loyal': 8, 'Promotion-Driven': 3, 'At-Risk': 6, New: 3 },
-                { subject: 'Retention', 'High-Value Loyal': 9, 'Promotion-Driven': 4, 'At-Risk': 2, New: 2 },
-              ]}
+              data={data.radar}
               keys={[
                 { key: 'High-Value Loyal', label: 'High-Value Loyal', color: '#4A7139' },
                 { key: 'Promotion-Driven', label: 'Promotion-Driven', color: '#C08A16' },
@@ -201,14 +206,14 @@ export default function Customers() {
           <Card>
             <CardHeader
               title="RFM scoring grid"
-              subtitle="Illustrative placement — not computed by a scoring model"
-              actions={<Badge tone="neutral">Demo</Badge>}
+              subtitle="Live mean scores per segment — 1–5 scale"
+              actions={<Badge tone="sage">Live</Badge>}
             />
             <div className="overflow-x-auto p-4">
               <table className="w-full min-w-[520px]">
                 <thead>
                   <tr className="border-b border-line">
-                    {['Segment', 'Recency', 'Frequency', 'Monetary', 'Score', 'Typical action'].map((h) => (
+                    {['Segment', 'Recency', 'Frequency', 'Monetary', 'Score', 'Suggested play'].map((h) => (
                       <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
                         {h}
                       </th>
@@ -216,10 +221,8 @@ export default function Customers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {SEGMENTS.map((s) => {
-                    const r = s.key === 'high-value' ? [9, 9, 9] : s.key === 'frequent' ? [8, 7, 6] : s.key === 'promo' ? [5, 5, 4] : s.key === 'at-risk' ? [2, 3, 6] : s.key === 'new' ? [6, 1, 3] : [4, 2, 2]
-                    const action =
-                      s.key === 'high-value' ? 'Protect and reward' : s.key === 'frequent' ? 'Grow basket with bundles' : s.key === 'promo' ? 'Reduce discount reliance' : s.key === 'at-risk' ? 'Win-back campaign' : s.key === 'new' ? 'Onboarding sequence' : 'Re-activate with offers'
+                  {data.segCards.map((s) => {
+                    const means = [s.meanR, s.meanF, s.meanM]
                     return (
                       <tr key={s.key} className="border-t border-line/70">
                         <td className="px-3 py-2.5">
@@ -228,18 +231,18 @@ export default function Customers() {
                             {s.name.replace(' Customers', '')}
                           </span>
                         </td>
-                        {r.map((v, i) => (
+                        {means.map((v, i) => (
                           <td key={i} className="px-3 py-2.5">
                             <div className="flex items-center gap-2">
-                              <Progress value={v * 11.1} className="w-16" tone={v >= 7 ? 'sage' : v >= 4 ? 'gold' : 'clay'} height={5} />
-                              <span className="text-[12px] font-semibold tabular-nums text-ink">{v}</span>
+                              <Progress value={v * 20} className="w-16" tone={v >= 3.5 ? 'sage' : v >= 2.5 ? 'gold' : 'clay'} height={5} />
+                              <span className="text-[12px] font-semibold tabular-nums text-ink">{v.toFixed(1)}</span>
                             </div>
                           </td>
                         ))}
                         <td className="px-3 py-2.5 font-mono text-[12px] font-bold text-ink">
-                          {r.join('-')}
+                          {means.map((v) => v.toFixed(1)).join('-')}
                         </td>
-                        <td className="px-3 py-2.5 text-[12.5px] text-ink-muted">{action}</td>
+                        <td className="px-3 py-2.5 text-[12.5px] text-ink-muted">{s.play}</td>
                       </tr>
                     )
                   })}
@@ -247,7 +250,7 @@ export default function Customers() {
               </table>
             </div>
             <div className="border-t border-line px-4 py-3">
-              <DemoNote>Recency, frequency and monetary scores shown here are hand-written demonstration values.</DemoNote>
+              <LiveNote>Scores are live segment means from the RFM pipeline. Plays are suggested next actions, not automation.</LiveNote>
             </div>
           </Card>
         </div>
@@ -255,9 +258,9 @@ export default function Customers() {
 
       {tab === 'behaviour' && (
         <div className="mt-5 grid gap-4 xl:grid-cols-2">
-          <ChartCard title="Favourite categories" subtitle="Share of demo order volume" height={280}>
+          <ChartCard title="Favourite categories" subtitle="Share of revenue in range — live" height={280}>
             <BarSeries
-              data={FAVOURITE_CATEGORIES}
+              data={data.favCats}
               xKey="category"
               layout="vertical"
               bars={[{ key: 'value', label: 'Share %', color: '#B54E17' }]}
@@ -266,52 +269,50 @@ export default function Customers() {
             />
           </ChartCard>
 
-          <ChartCard title="Time-of-day preferences" subtitle="Orders by channel and time slot — demo values" height={280}>
+          <ChartCard title="Orders by channel" subtitle="Orders in range — live" height={280}>
             <BarSeries
-              data={TIME_PREFERENCE}
-              xKey="slot"
-              bars={[
-                { key: 'dineIn', label: 'Dine-in', color: '#B54E17', stackId: 'a' },
-                { key: 'delivery', label: 'Delivery', color: '#5E8C4A', stackId: 'a' },
-                { key: 'takeaway', label: 'Takeaway', color: '#C08A16', stackId: 'a' },
-              ]}
-              valueFormat={(v) => `${v} orders`}
+              data={data.channelBars}
+              xKey="channel"
+              bars={[{ key: 'orders', label: 'Orders', color: '#2F6FA8' }]}
+              valueFormat={(v) => `${num(v)} orders`}
+              showLegend={false}
             />
           </ChartCard>
 
-          <ChartCard title="Repeat purchase trend" subtitle="Share of customers ordering more than once" height={250}>
+          <ChartCard title="Active customers trend" subtitle="Monthly active customers — live" height={250}>
             <AreaSeries
-              data={[
-                { m: 'Apr', v: 34.2 }, { m: 'May', v: 36.1 }, { m: 'Jun', v: 37.4 },
-                { m: 'Jul', v: 39.0 }, { m: 'Aug', v: 40.1 }, { m: 'Sep', v: 41.2 },
-              ]}
+              data={data.trends}
               xKey="m"
-              yKey="v"
-              name="Repeat rate"
-              valueFormat={(v) => `${v}%`}
+              yKey="active"
+              name="Active customers"
+              valueFormat={(v) => `${num(v)} customers`}
             />
           </ChartCard>
 
           <Card>
-            <CardHeader title="Customer activity timeline" subtitle="Demo activity for one selected customer" className="border-b" />
+            <CardHeader title="Customer activity timeline" subtitle={`Live orders · ${data.timelineId ?? '—'}`} className="border-b" />
             <div className="p-5">
-              <ol className="space-y-4">
-                {CUSTOMER_TIMELINE.map((t, i) => (
-                  <li key={t.title} className="flex gap-3.5">
-                    <span className="relative flex flex-col items-center">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: `${t.tone}1A`, color: t.tone }}>
-                        <Icon name={i === 0 ? 'ShoppingBag' : i === 1 ? 'Store' : i === 2 ? 'BadgePercent' : i === 3 ? 'XCircle' : 'Star'} size={14} />
+              {(timelineDetail?.recent_orders ?? []).length === 0 ? (
+                <p className="text-[13px] text-ink-muted">No recent orders found.</p>
+              ) : (
+                <ol className="space-y-4">
+                  {(timelineDetail?.recent_orders ?? []).slice(0, 5).map((o, i, arr) => (
+                    <li key={o.order_id} className="flex gap-3.5">
+                      <span className="relative flex flex-col items-center">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ember-50 text-ember-600">
+                          <Icon name="ShoppingBag" size={14} />
+                        </span>
+                        {i < arr.length - 1 && <span className="mt-1 w-px flex-1 bg-line" />}
                       </span>
-                      {i < CUSTOMER_TIMELINE.length - 1 && <span className="mt-1 w-px flex-1 bg-line" />}
-                    </span>
-                    <span className="pb-1">
-                      <span className="block text-[13px] font-semibold text-ink">{t.title}</span>
-                      <span className="block text-[12px] text-ink-muted">{t.detail}</span>
-                      <span className="mt-0.5 block text-[11.5px] text-ink-faint">{t.time}</span>
-                    </span>
-                  </li>
-                ))}
-              </ol>
+                      <span className="pb-1">
+                        <span className="block font-mono text-[13px] font-semibold text-ink">{o.order_id}</span>
+                        <span className="block text-[12px] text-ink-muted">{o.channel} · {money(o.total_amount)} · {o.status}</span>
+                        <span className="mt-0.5 block text-[11.5px] text-ink-faint">{timeAgoISO(o.order_datetime)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </div>
           </Card>
         </div>
@@ -321,17 +322,17 @@ export default function Customers() {
         <div className="mt-5">
           <Card>
             <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
-              <SearchInput value={query} onChange={setQuery} placeholder="Search name, email or phone…" className="w-full sm:w-72" />
+              <SearchInput value={query} onChange={setQuery} placeholder="Search customer ID…" className="w-full sm:w-72" />
               <Select value={segment} onChange={(e) => setSegment(e.target.value)} className="w-auto" aria-label="Segment">
                 <option value="all">All segments</option>
-                {SEGMENTS.map((s) => (
+                {data.segCards.map((s) => (
                   <option key={s.key} value={s.name}>
                     {s.name}
                   </option>
                 ))}
               </Select>
               <span className="ml-auto text-[12.5px] text-ink-muted">
-                <span className="font-semibold text-ink">{rows.length}</span> of {CUSTOMERS.length} demo customers
+                <span className="font-semibold text-ink">{rows.length}</span> of {num(data.total)} live customers
               </span>
             </div>
             <DataTable
@@ -342,7 +343,7 @@ export default function Customers() {
               onRowClick={(c) => setActive(c)}
               initialSort={{ key: 'spend', dir: 'desc' }}
               emptyTitle="No customers match this search"
-              emptyMessage="Try a different name, email, phone number or segment."
+              emptyMessage="Try a different customer ID or segment."
               emptyAction={
                 <Button
                   size="sm"
@@ -365,14 +366,14 @@ export default function Customers() {
       <Drawer
         open={!!active}
         onClose={() => setActive(null)}
-        title={active?.name ?? ''}
-        subtitle={active ? `${active.email} · ${active.phone}` : ''}
+        title={active?.id ?? ''}
+        subtitle={active ? `Customer since ${active.joined} · ${active.tenure} days tenure` : ''}
         width="lg"
         badge={
           active ? (
             <span
               className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11.5px] font-bold"
-              style={{ background: `${SEG_COLOR[active.segment]}1A`, color: SEG_COLOR[active.segment] }}
+              style={{ background: `${active.color}1A`, color: active.color }}
             >
               {active.segment}
             </span>
@@ -381,8 +382,17 @@ export default function Customers() {
         footer={
           active && (
             <>
-              <Button variant="secondary" icon="Mail">
-                Send offer
+              <Button
+                variant="secondary"
+                icon="Copy"
+                onClick={() => {
+                  void navigator.clipboard.writeText(active.id).then(
+                    () => push({ title: 'Customer ID copied', tone: 'success' }),
+                    () => push({ title: 'Copy failed', tone: 'error' }),
+                  )
+                }}
+              >
+                Copy ID
               </Button>
               <Link to="/admin/recommendations">
                 <Button icon="Lightbulb">Related recommendations</Button>
@@ -398,7 +408,7 @@ export default function Customers() {
                 { l: 'Orders', v: `${active.orders}` },
                 { l: 'Lifetime spend', v: money(active.spend) },
                 { l: 'Avg order', v: money(active.aov) },
-                { l: 'Est. CLV', v: money(SEGMENTS.find((s) => s.name === active.segment)?.clv ?? 0, { compact: true }) },
+                { l: 'Basket size', v: `${active.basket} items` },
               ].map((s) => (
                 <div key={s.l} className="rounded-xl border border-line bg-white p-3.5">
                   <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">{s.l}</p>
@@ -409,19 +419,19 @@ export default function Customers() {
 
             <Card className="p-4">
               <div className="flex flex-wrap items-center gap-5">
-                <ProgressRing value={(active.recency / 90) * 100} color="#96352C" size={64} stroke={6}>
+                <ProgressRing value={Math.min(100, (active.recency / 90) * 100)} color="#96352C" size={64} stroke={6}>
                   {active.recency}d
                 </ProgressRing>
-                <ProgressRing value={active.frequency * 11.1} color="#2F6FA8" size={64} stroke={6}>
-                  {active.frequency}
+                <ProgressRing value={active.F * 20} color="#2F6FA8" size={64} stroke={6}>
+                  {active.F}
                 </ProgressRing>
-                <ProgressRing value={active.monetary * 11.1} color="#4A7139" size={64} stroke={6}>
-                  {active.monetary}
+                <ProgressRing value={active.M * 20} color="#4A7139" size={64} stroke={6}>
+                  {active.M}
                 </ProgressRing>
                 <div className="min-w-[160px] flex-1">
                   <p className="text-[12.5px] font-semibold text-ink">RFM score {active.rfm}</p>
                   <p className="mt-1 text-[12px] leading-relaxed text-ink-muted">
-                    Illustrative recency, frequency and monetary scores for interface demonstration.
+                    Live recency (days), frequency and monetary scores on the 1–5 pipeline scale.
                   </p>
                 </div>
               </div>
@@ -432,31 +442,35 @@ export default function Customers() {
               <div className="mt-1 divide-y divide-line">
                 <MetricRow label="Segment" value={active.segment} />
                 <MetricRow label="Preferred channel" value={active.channel} />
-                <MetricRow label="Favourite dishes" value={active.favourites.join(', ')} />
+                <MetricRow label="Favourite category" value={active.favCat} />
+                <MetricRow label="Promo sensitivity" value={`${active.promoSens}%`} />
                 <MetricRow label="Customer since" value={active.joined} />
-                <MetricRow label="City" value={active.city} />
                 <MetricRow label="Last order" value={active.lastOrder} />
               </div>
             </Card>
 
             <Card className="p-4">
-              <p className="text-[13px] font-semibold text-ink">Activity timeline</p>
-              <ol className="mt-3 space-y-3">
-                {CUSTOMER_TIMELINE.slice(0, 4).map((t, i) => (
-                  <li key={t.title} className="flex gap-3">
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: t.tone }} />
-                    <span>
-                      <span className="block text-[12.5px] font-medium text-ink">{t.title}</span>
-                      <span className="block text-[11.5px] text-ink-muted">
-                        {t.detail} · {t.time}
+              <p className="text-[13px] font-semibold text-ink">Recent orders</p>
+              {(detail?.recent_orders ?? []).length === 0 ? (
+                <p className="mt-2 text-[12.5px] text-ink-muted">No recent orders on record.</p>
+              ) : (
+                <ol className="mt-3 space-y-3">
+                  {(detail?.recent_orders ?? []).slice(0, 4).map((o) => (
+                    <li key={o.order_id} className="flex gap-3">
+                      <span className={cn('mt-1 h-2 w-2 shrink-0 rounded-full', o.status === 'Completed' ? 'bg-sage-500' : 'bg-clay-500')} />
+                      <span>
+                        <span className="block font-mono text-[12.5px] font-medium text-ink">{o.order_id}</span>
+                        <span className="block text-[11.5px] text-ink-muted">
+                          {o.channel} · {money(o.total_amount)} · {fmtDate(o.order_datetime)}
+                        </span>
                       </span>
-                    </span>
-                  </li>
-                ))}
-              </ol>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </Card>
 
-            <DemoNote>Demo customer profile. No personal data is collected or stored in this prototype.</DemoNote>
+            <LiveNote>Live customer profile. Records are anonymized IDs — no names, emails or phone numbers are stored.</LiveNote>
           </div>
         )}
       </Drawer>

@@ -1344,3 +1344,95 @@ export function useInventoryData() {
 
   return { data: shaped, loading, error, refetch }
 }
+
+/* ───────────────────────────── Pricing ───────────────────────────── */
+
+export type PricingLiveRow = {
+  id: string
+  name: string
+  category: string
+  current: number
+  previous: number
+  changePct: number | null
+  unitsBefore: number | null
+  unitsAfter: number | null
+  margin: number
+  revenue: number
+  contribution: number
+  units: number
+  sensitivity: string
+  elasticity: number | null
+  reason: string
+}
+
+export type PricePoint = { date: string; price: number }
+
+export function usePricingData() {
+  const pricing = useApi<{
+    elasticity: {
+      item_id: string
+      item_name: string
+      verdict: string
+      reason: string
+      p1: number
+      p2: number
+      price_change_pct: number | null
+      q1_day: number | null
+      q2_day: number | null
+      elasticity: number | null
+    }[]
+    margin_by_item: { item_id: string; item_name: string; revenue: number; contribution_margin: number; profit_pct: number; units_sold: number }[]
+    history: { item_id: string; price: number; effective_from: string; effective_to: string }[]
+  }>('/pricing')
+  const items = useApi<{ item_id: string; category_name: string }[]>('/menu/items')
+
+  const loading = pricing.loading || items.loading
+  const error = pricing.error ?? items.error
+  const refetch = () => {
+    pricing.refetch()
+    items.refetch()
+  }
+
+  const shaped = useMemo(() => {
+    if (!pricing.data) return null
+    const catOf: Record<string, string> = {}
+    for (const m of items.data ?? []) catOf[m.item_id] = m.category_name
+    const marginOf: Record<string, { revenue: number; contribution: number; profit_pct: number; units: number }> = {}
+    for (const m of pricing.data.margin_by_item) {
+      marginOf[m.item_id] = { revenue: m.revenue, contribution: m.contribution_margin, profit_pct: m.profit_pct, units: m.units_sold }
+    }
+    const rows: PricingLiveRow[] = pricing.data.elasticity.map((e) => ({
+      id: e.item_id,
+      name: e.item_name,
+      category: catOf[e.item_id] ?? '—',
+      current: e.p2,
+      previous: e.p1,
+      changePct: e.price_change_pct,
+      unitsBefore: e.q1_day,
+      unitsAfter: e.q2_day,
+      margin: marginOf[e.item_id]?.profit_pct ?? 0,
+      revenue: marginOf[e.item_id]?.revenue ?? 0,
+      contribution: marginOf[e.item_id]?.contribution ?? 0,
+      units: marginOf[e.item_id]?.units ?? 0,
+      sensitivity: e.verdict === 'Highly Price Sensitive' ? 'Highly Price Sensitive' : 'Insufficient evidence',
+      elasticity: e.elasticity,
+      reason: e.reason,
+    }))
+
+    const histByItem: Record<string, PricePoint[]> = {}
+    for (const h of pricing.data.history) {
+      ;(histByItem[h.item_id] ??= []).push({ date: h.effective_from.slice(0, 10), price: h.price })
+    }
+    for (const k of Object.keys(histByItem)) histByItem[k].sort((a, b) => (a.date < b.date ? -1 : 1))
+
+    const changed = rows.filter((r) => r.changePct != null)
+    const avgChange = changed.length ? changed.reduce((s, r) => s + (r.changePct ?? 0), 0) / changed.length : 0
+    const avgMargin = rows.length ? rows.reduce((s, r) => s + r.margin, 0) / rows.length : 0
+    const highly = rows.filter((r) => r.sensitivity === 'Highly Price Sensitive')
+    const ranked = [...rows].filter((r) => r.elasticity != null).sort((a, b) => Math.abs(b.elasticity ?? 0) - Math.abs(a.elasticity ?? 0))
+
+    return { rows, histByItem, changed: changed.length, avgChange, avgMargin, highly: highly.length, ranked, total: rows.length }
+  }, [pricing.data, items.data])
+
+  return { data: shaped, loading, error, refetch }
+}

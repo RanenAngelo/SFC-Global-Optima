@@ -581,3 +581,247 @@ export function useMenuData() {
 
   return { data: shaped, loading, error, refetch }
 }
+
+/* ───────────────────────────── Menu intelligence ───────────────────────────── */
+
+export type IntelClassKey = 'profit-driver' | 'volume-driver' | 'hidden-opportunity' | 'low-performer'
+
+export const INTEL_CLASS_ORDER: IntelClassKey[] = ['profit-driver', 'volume-driver', 'hidden-opportunity', 'low-performer']
+
+export function classToKey(c: string | null | undefined): IntelClassKey {
+  switch ((c ?? '').trim().toLowerCase()) {
+    case 'profit driver':
+      return 'profit-driver'
+    case 'volume driver':
+      return 'volume-driver'
+    case 'hidden opportunity':
+      return 'hidden-opportunity'
+    default:
+      return 'low-performer'
+  }
+}
+
+/** Presentation metadata for the four pipeline classes. Counts are filled live;
+ * criteria describe the real percentile rules from classify_menu.py. */
+export const INTEL_CLASSES: Record<
+  IntelClassKey,
+  { label: string; short: string; desc: string; color: string; bg: string; border: string; criteria: string[] }
+> = {
+  'profit-driver': {
+    label: 'Profit Driver',
+    short: 'Profit',
+    desc: 'High demand and high profit with controlled wastage. These dishes carry the menu and should be protected from discounting.',
+    color: '#4A7139', bg: '#F1F6EF', border: '#DDE9D8',
+    criteria: ['Units sold ≥ p70 (high demand)', 'Contribution margin ≥ p70 (high profit)', 'Wastage below p75'],
+  },
+  'volume-driver': {
+    label: 'Volume Driver',
+    short: 'Volume',
+    desc: 'High order volume below the high-profit bar. These dishes bring customers in and anchor combos and bundles.',
+    color: '#2F6FA8', bg: '#F1F6FB', border: '#DDEBF7',
+    criteria: ['Units sold ≥ p70 (high demand)', 'Below the high-profit bar, or excessive wastage'],
+  },
+  'hidden-opportunity': {
+    label: 'Hidden Opportunity',
+    short: 'Opportunity',
+    desc: 'Strong margin, or strong ratings with good repeat — but low visibility. Merchandising and placement usually move these first.',
+    color: '#C08A16', bg: '#FDF7EA', border: '#F8EBCB',
+    criteria: ['High margin, or rated ≥ 4.0 with good repeat', 'Wastage below p75 and rating not poor (< 3.0)'],
+  },
+  'low-performer': {
+    label: 'Low Performer',
+    short: 'Low',
+    desc: 'Low volume combined with low margin, high wastage or poor ratings. Candidates for rework, repositioning or removal.',
+    color: '#96352C', bg: '#FBF3F1', border: '#F4E1DB',
+    criteria: ['Below the high-demand and high-profit bars', 'Or blocked by excessive wastage / poor rating'],
+  },
+}
+
+export type IntelRow = {
+  id: string
+  name: string
+  category: string
+  categoryId: string
+  units: number
+  revenue: number
+  cost: number
+  cm: number
+  profitPct: number
+  rating: number
+  nRatings: number
+  repeat: number
+  wastage: number
+  wastedQty: number
+  promoDependency: number
+  avgDiscount: number
+  classification: IntelClassKey
+  firstSold: string
+  lastSold: string
+}
+
+export type PromoRec = {
+  promotion_id: string
+  promotion_name: string
+  scope: string
+  target_id: string
+  discount_pct: number
+  start_date: string
+  end_date: string
+}
+
+export function useMenuIntelData() {
+  const f = useApiFilters()
+  const { options: meta } = useMeta()
+  const global = useApi<{ scope: string; rows: MenuIntelRow[]; classes: { class: string; n: number }[] }>(
+    '/menu-intelligence',
+    { params: {}, enabled: f.ready },
+  )
+  const scoped = useApi<{ scope: string; rows: MenuIntelRow[]; classes: { class: string; n: number }[] }>(
+    '/menu-intelligence',
+    { params: f.location !== 'all' ? { restaurant_id: f.location } : {}, enabled: f.ready && f.location !== 'all' },
+  )
+  const waste = useApi<{ wastage_summary: { item_id: string; wasted_qty: number; wastage_cost: number; incidents: number }[] }>(
+    '/inventory',
+    { enabled: f.ready },
+  )
+  const promos = useApi<{ promotions: PromoRec[] }>('/promotions', { enabled: f.ready })
+  const over = useApi<OverviewOut>('/dashboard/overview', { params: f.params, enabled: f.ready })
+
+  const loading = global.loading || scoped.loading || waste.loading || promos.loading || over.loading
+  const error = global.error ?? waste.error ?? promos.error ?? over.error
+  const refetch = () => {
+    global.refetch()
+    scoped.refetch()
+    waste.refetch()
+    promos.refetch()
+    over.refetch()
+  }
+
+  const shaped = useMemo(() => {
+    if (!global.data) return null
+    const gById: Record<string, MenuIntelRow> = {}
+    for (const r of global.data.rows) gById[r.item_id] = r
+    const useScoped = f.location !== 'all' && scoped.data?.scope === 'location'
+    const srcRows = useScoped ? scoped.data!.rows : global.data.rows
+
+    const rows: IntelRow[] = srcRows.map((r) => {
+      const g = gById[r.item_id] ?? r
+      const units = r.units_sold ?? 0
+      const revenue = r.revenue ?? 0
+      const cm = r.contribution_margin ?? 0
+      const cls = useScoped ? (r.location_class as string | undefined) : (r.performance_class as string | undefined)
+      const profitPct = revenue > 0 ? (cm / revenue) * 100 : 0
+      return {
+        id: r.item_id,
+        name: (r.item_name as string) ?? r.item_id,
+        category: (g.category_name as string) ?? '—',
+        categoryId: (g.category_id as string) ?? '',
+        units,
+        revenue: Math.round(revenue * 100) / 100,
+        cost: Math.round(((g.cost as number) ?? revenue - cm) * 100) / 100,
+        cm: Math.round(cm * 100) / 100,
+        profitPct: Math.round(profitPct * 10) / 10,
+        rating: Math.round(((r.avg_rating as number) ?? (g.avg_rating as number) ?? 0) * 100) / 100,
+        nRatings: (g.n_ratings as number) ?? 0,
+        repeat: Math.round((((r.repeat_purchase_rate as number) ?? 0) * 100) * 10) / 10,
+        wastage: Math.round((((r.wastage_pct as number) ?? 0)) * 10) / 10,
+        wastedQty: (r.wasted_qty as number) ?? 0,
+        promoDependency: Math.round((((g.promotion_dependency as number) ?? 0) * 100) * 10) / 10,
+        avgDiscount: Math.round((((g.avg_discount_pct as number) ?? 0) * 100) * 10) / 10,
+        classification: classToKey(cls),
+        firstSold: ((g.first_sold as string) ?? '').slice(0, 10),
+        lastSold: ((g.last_sold as string) ?? '').slice(0, 10),
+      }
+    })
+
+    const classCounts: Record<string, number> = {}
+    for (const r of rows) classCounts[r.classification] = (classCounts[r.classification] ?? 0) + 1
+    const classes = INTEL_CLASS_ORDER.map((key) => ({
+      key,
+      ...INTEL_CLASSES[key],
+      count: classCounts[key] ?? 0,
+      shareLabel: rows.length ? `${Math.round(((classCounts[key] ?? 0) / rows.length) * 100)}% of items` : '—',
+    }))
+    const dist = classes.map((c) => ({
+      name: c.label,
+      value: rows.length ? Math.round((c.count / rows.length) * 1000) / 10 : 0,
+      color: c.color,
+    }))
+
+    const scatter = rows.map((r) => ({ name: r.name, units: r.units, profitPct: r.profitPct, classification: r.classification }))
+
+    const byCat: Record<string, { revenue: number; units: number; cm: number }> = {}
+    for (const r of rows) {
+      const b = (byCat[r.category] ??= { revenue: 0, units: 0, cm: 0 })
+      b.revenue += r.revenue
+      b.units += r.units
+      b.cm += r.cm
+    }
+    const categoryBars = Object.entries(byCat)
+      .map(([category, b]) => ({
+        category,
+        revenue: Math.round(b.revenue * 100) / 100,
+        units: b.units,
+        margin: b.revenue ? Math.round((b.cm / b.revenue) * 1000) / 10 : 0,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+
+    const buckets = ['<40%', '40–50%', '50–60%', '60–70%', '70%+']
+    const marginDist = buckets.map((bucket) => ({ bucket, items: 0 }))
+    for (const r of rows) {
+      const i = r.profitPct < 40 ? 0 : r.profitPct < 50 ? 1 : r.profitPct < 60 ? 2 : r.profitPct < 70 ? 3 : 4
+      marginDist[i].items += 1
+    }
+
+    const menuAvgRating = rows.length ? rows.reduce((s, r) => s + r.rating, 0) / rows.length : 0
+    const wasteById: Record<string, { qty: number; cost: number; incidents: number }> = {}
+    for (const w of waste.data?.wastage_summary ?? []) {
+      wasteById[w.item_id] = { qty: w.wasted_qty, cost: w.wastage_cost, incidents: w.incidents }
+    }
+
+    return {
+      rows,
+      classes,
+      dist,
+      scatter,
+      categoryBars,
+      marginDist,
+      menuAvgRating,
+      wasteById,
+      promos: promos.data?.promotions ?? [],
+      salesTrend: (over.data?.revenue_trend ?? []).map((t) => ({ d: fmtDate(t.d), units: t.orders, revenue: t.revenue })),
+      scoped: useScoped,
+      dataMax: (meta?.date_range?.dmax as string | undefined)?.slice(0, 10) ?? null,
+    }
+  }, [global.data, scoped.data, waste.data, promos.data, over.data, f.location, meta])
+
+  return { data: shaped, loading, error, refetch }
+}
+
+export type IntelDetail = {
+  item: MenuIntelRow
+  monthly_trend: { m: string; units: number; revenue: number }[]
+  locations: {
+    restaurant_id: string
+    restaurant_name: string
+    city: string
+    units_sold: number
+    revenue: number
+    contribution_margin: number
+    buyers: number
+    wastage_pct: number
+    avg_rating: number | null
+    location_class: string
+    differs_from_global: number
+  }[]
+  elasticity: { price_change_pct: number | null; elasticity: number | null; verdict: string; reason: string }[]
+  slow: { slow_moving: number; signals: string } | null
+  channels: { channel: string; units: number; lines: number; revenue: number }[]
+  price_history: { price: number; effective_from: string; effective_to: string | null }[]
+  rating_dist: { rating: number; n: number }[]
+}
+
+export function useIntelDetail(itemId: string | null) {
+  const q = useApi<IntelDetail>(itemId ? `/menu-intelligence/${itemId}` : null, { enabled: !!itemId })
+  return { detail: q.data ?? null, loading: q.loading }
+}

@@ -7,16 +7,6 @@
   "bundles": 15,
   "top_rules": [
     {
-      "antecedent": "M0055",
-      "consequent": "M0119",
-      "support": 0.038,
-      "confidence": 0.8871,
-      "lift": 20.641,
-      "transactions": 322,
-      "antecedent_names": "Mutton Biryani",
-      "consequent_names": "Lemonade"
-    },
-    {
       "antecedent": "M0119",
       "consequent": "M0055",
       "support": 0.038,
@@ -27,14 +17,14 @@
       "consequent_names": "Mutton Biryani"
     },
     {
-      "antecedent": "M0138",
-      "consequent": "M0046",
-      "support": 0.0331,
-      "confidence": 0.7547,
-      "lift": 16.102,
-      "transactions": 280,
-      "antecedent_names": "Grilled Vegetables",
-      "consequent_names": "Grilled Salmon"
+      "antecedent": "M0055",
+      "consequent": "M0119",
+      "support": 0.038,
+      "confidence": 0.8871,
+      "lift": 20.641,
+      "transactions": 322,
+      "antecedent_names": "Mutton Biryani",
+      "consequent_names": "Lemonade"
     },
     {
       "antecedent": "M0046",
@@ -45,6 +35,16 @@
       "transactions": 280,
       "antecedent_names": "Grilled Salmon",
       "consequent_names": "Grilled Vegetables"
+    },
+    {
+      "antecedent": "M0138",
+      "consequent": "M0046",
+      "support": 0.0331,
+      "confidence": 0.7547,
+      "lift": 16.102,
+      "transactions": 280,
+      "antecedent_names": "Grilled Vegetables",
+      "consequent_names": "Grilled Salmon"
     },
     {
       "antecedent": "M0064",

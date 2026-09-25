@@ -78,13 +78,24 @@ def menu_item_detail(item_id: str, user=Depends(deps.get_current_user)):
     trend = deps.q("""SELECT substr(order_datetime,1,7) m, SUM(quantity) units,
         ROUND(SUM(line_total),2) revenue FROM fact_order_lines
         WHERE item_id = :i AND status='Completed' GROUP BY 1 ORDER BY 1""", {"i": item_id})
-    locs = deps.q("SELECT * FROM location_menu_class WHERE item_id = :i ORDER BY revenue DESC",
-                  {"i": item_id})
+    locs = deps.q("""SELECT l.*, r.restaurant_name, r.city FROM location_menu_class l
+        JOIN restaurants r ON l.restaurant_id = r.restaurant_id
+        WHERE l.item_id = :i ORDER BY l.revenue DESC""", {"i": item_id})
     elas = deps.q("SELECT * FROM price_elasticity WHERE item_id = :i", {"i": item_id})
     slow = deps.q("SELECT slow_moving, signals FROM slow_movers WHERE item_id = :i",
                   {"i": item_id})
+    channels = deps.q("""SELECT channel, SUM(quantity) units, COUNT(*) lines,
+        ROUND(SUM(line_total),2) revenue FROM fact_order_lines
+        WHERE item_id = :i AND status='Completed' GROUP BY 1 ORDER BY 2 DESC""",
+                      {"i": item_id})
+    price_hist = deps.q("SELECT price, effective_from, effective_to FROM pricing_history "
+                        "WHERE item_id = :i ORDER BY effective_from", {"i": item_id})
+    rating_dist = deps.q("SELECT rating, COUNT(*) n FROM ratings WHERE item_id = :i "
+                         "GROUP BY 1 ORDER BY 1", {"i": item_id})
     return {"item": base[0], "monthly_trend": trend, "locations": locs,
-            "elasticity": elas, "slow": slow[0] if slow else None}
+            "elasticity": elas, "slow": slow[0] if slow else None,
+            "channels": channels, "price_history": price_hist,
+            "rating_dist": rating_dist}
 
 
 @router.get("/customers/analytics")

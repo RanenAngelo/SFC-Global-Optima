@@ -9,12 +9,12 @@
       "new_price": 18.36
     },
     "impact": {
-      "demand_pct": 58.2,
-      "revenue_delta": 11349.93,
-      "margin_delta": 6960.14
+      "demand_pct": -10.0,
+      "revenue_delta": -153.4,
+      "margin_delta": 600.73
     },
     "assumptions": [
-      "elasticity e=5.821 (median measured elasticity (assumption))",
+      "elasticity e=-1.0 (no measured elasticity for item; unit-elastic fallback (assumption))",
       "unit cost constant",
       "no competitor response",
       "window = full history scale"

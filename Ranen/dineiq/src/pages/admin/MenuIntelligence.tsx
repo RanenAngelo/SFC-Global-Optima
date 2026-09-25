@@ -6,38 +6,44 @@ import {
 import { Column, DataTable } from '../../components/ui/table'
 import { Drawer } from '../../components/ui/overlay'
 import { PageHeader } from '../../components/admin/PageHeader'
-import { BarSeries, ChartCard, DonutChart, LineSeries, ScatterPlot, Sparkline, TrendChart, defaultCurrencyFormat } from '../../components/charts'
-import { DemoNote, FoodImage, KpiCard, MetricRow, ProgressRing } from '../../components/shared'
-import {
-  CLASSIFICATIONS, CATEGORY_REVENUE, DEMO_NOTE, MARGIN_DISTRIBUTION, MENU_DETAIL_TABS, MENU_INTEL,
-  MENU_PERFORMANCE_DIST, SCATTER_DATA, type ClassificationKey, type MenuIntelRow,
-} from '../../lib/data/analytics'
+import { BarSeries, ChartCard, DonutChart, LineSeries, ScatterPlot, Sparkline, TrendChart } from '../../components/charts'
+import { FoodImage, KpiCard, LiveNote, MetricRow, ProgressRing } from '../../components/shared'
+import { PageError, PageLoader, fmtDate } from '../../lib/api'
+import { INTEL_CLASS_ORDER, diffDaysISO, useIntelDetail, useMenuIntelData, type IntelRow } from '../../lib/live'
 import { money, num } from '../../lib/utils'
 
-const ORDER: ClassificationKey[] = ['profit-driver', 'volume-driver', 'hidden-opportunity', 'low-performer']
+const MENU_DETAIL_TABS = [
+  'Overview', 'Sales', 'Profitability', 'Customer behaviour', 'Ratings', 'Wastage', 'Pricing', 'Promotions', 'Location performance',
+]
 
 export default function MenuIntelligence() {
   const [tab, setTab] = useState('overview')
-  const [filter, setFilter] = useState<ClassificationKey | 'all'>('all')
+  const [filter, setFilter] = useState<string>('all')
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
-  const [active, setActive] = useState<MenuIntelRow | null>(null)
+  const [active, setActive] = useState<IntelRow | null>(null)
   const [detailTab, setDetailTab] = useState('Overview')
+  const { data, loading, error, refetch } = useMenuIntelData()
+  const { detail, loading: detailLoading } = useIntelDetail(active?.id ?? null)
 
   const rows = useMemo(() => {
-    let r = MENU_INTEL
+    let r = data?.rows ?? []
     if (filter !== 'all') r = r.filter((x) => x.classification === filter)
     if (category !== 'all') r = r.filter((x) => x.category === category)
     const q = query.trim().toLowerCase()
     if (q) r = r.filter((x) => x.name.toLowerCase().includes(q) || x.category.toLowerCase().includes(q))
     return r
-  }, [filter, category, query])
+  }, [data, filter, category, query])
 
-  const avg = (k: keyof MenuIntelRow) => MENU_INTEL.reduce((s, r) => s + (r[k] as number), 0) / MENU_INTEL.length
+  if (loading && !data) return <PageLoader />
+  if (error || !data) return <PageError message={error ?? 'No menu intelligence.'} onRetry={refetch} />
 
-  const categories = Array.from(new Set(MENU_INTEL.map((r) => r.category)))
+  const clsByKey = Object.fromEntries(data.classes.map((c) => [c.key, c]))
+  const categories = Array.from(new Set(data.rows.map((r) => r.category))).sort()
+  const avg = (k: 'profitPct' | 'rating' | 'wastage' | 'repeat') =>
+    data.rows.length ? data.rows.reduce((s, r) => s + r[k], 0) / data.rows.length : 0
 
-  const columns: Column<MenuIntelRow>[] = [
+  const columns: Column<IntelRow>[] = [
     {
       key: 'name',
       header: 'Menu item',
@@ -45,7 +51,7 @@ export default function MenuIntelligence() {
       sort: (a, b) => a.name.localeCompare(b.name),
       render: (r) => (
         <div className="flex items-center gap-3">
-          <FoodImage src={r.img} name={r.name} className="h-9 w-9 shrink-0" ratio="fill" />
+          <FoodImage name={r.name} className="h-9 w-9 shrink-0" ratio="fill" />
           <div className="min-w-0">
             <p className="truncate text-[13px] font-semibold text-ink">{r.name}</p>
             <p className="truncate text-[11.5px] text-ink-muted">{r.category}</p>
@@ -82,7 +88,7 @@ export default function MenuIntelligence() {
       header: 'Profit %',
       align: 'right',
       sort: (a, b) => a.profitPct - b.profitPct,
-      headerTip: 'Contribution margin as a percentage of revenue — demo value',
+      headerTip: 'Contribution margin as a percentage of revenue — live pipeline value',
       render: (r) => (
         <span className={cn('rounded-full px-2 py-0.5 text-[12px] font-bold', r.profitPct >= 65 ? 'bg-sage-50 text-sage-700' : r.profitPct >= 58 ? 'bg-gold-50 text-gold-600' : 'bg-clay-50 text-clay-600')}>
           {r.profitPct.toFixed(1)}%
@@ -98,7 +104,7 @@ export default function MenuIntelligence() {
       render: (r) => (
         <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-ink">
           <Icon name="Star" size={11} className="fill-gold-500 text-gold-500" />
-          {r.rating}
+          {r.nRatings > 0 ? r.rating.toFixed(1) : '—'}
         </span>
       ),
     },
@@ -127,7 +133,7 @@ export default function MenuIntelligence() {
       header: 'Classification',
       width: '160px',
       render: (r) => {
-        const c = CLASSIFICATIONS[r.classification]
+        const c = clsByKey[r.classification]
         return (
           <span
             className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11.5px] font-bold"
@@ -140,11 +146,13 @@ export default function MenuIntelligence() {
       },
     },
     {
-      key: 'trend',
-      header: 'Trend',
-      align: 'center',
+      key: 'promo',
+      header: 'Promo %',
+      align: 'right',
       hideBelow: 'md',
-      render: (r) => <Sparkline values={r.trend} color={CLASSIFICATIONS[r.classification].color} width={72} height={24} />,
+      sort: (a, b) => a.promoDependency - b.promoDependency,
+      headerTip: 'Share of units sold while an offer was active — live pipeline value',
+      render: (r) => <span className="tabular-nums text-ink-soft">{r.promoDependency}%</span>,
     },
     {
       key: 'actions',
@@ -152,20 +160,42 @@ export default function MenuIntelligence() {
       align: 'right',
       width: '70px',
       render: (r) => (
-        <Button size="xs" variant="secondary" icon="ChartNoAxesColumn" onClick={() => setActive(r)}>
+        <Button size="xs" variant="secondary" icon="ChartNoAxesColumn" onClick={() => { setActive(r); setDetailTab('Overview') }}>
           Analyse
         </Button>
       ),
     },
   ]
 
+  const monthUnits = detail?.monthly_trend.map((t) => t.units) ?? []
+  const monthSales = detail?.monthly_trend.map((t) => ({ m: t.m, units: t.units, revenue: t.revenue })) ?? []
+  const chUnits = (detail?.channels ?? []).reduce((s, c) => s + c.units, 0)
+  const channelMix = (detail?.channels ?? []).map((c) => ({
+    c: c.channel,
+    v: chUnits ? Math.round((c.units / chUnits) * 1000) / 10 : 0,
+  }))
+  const rateN = (detail?.rating_dist ?? []).reduce((s, r) => s + r.n, 0)
+  const rateDist = (detail?.rating_dist ?? []).map((r) => ({
+    s: `${r.rating}★`,
+    v: rateN ? Math.round((r.n / rateN) * 1000) / 10 : 0,
+  }))
+  const itemPromos = active
+    ? data.promos.filter(
+        (p) => p.scope === 'Storewide' || (p.scope === 'Item' && p.target_id === active.id) || (p.scope === 'Category' && p.target_id === active.categoryId),
+      )
+    : []
+  const waste = active ? data.wasteById[active.id] : undefined
+  const daysActive = active && active.firstSold && active.lastSold ? Math.max(1, diffDaysISO(active.firstSold, active.lastSold) + 1) : 1
+
   return (
     <div>
       <PageHeader
         eyebrow="MenuMatrix Dining Intelligence"
         title="Menu Intelligence"
-        subtitle="Understand which dishes drive profit, which drive volume, and which are quietly holding the menu back."
-        demoNote="Classifications below are static demonstration labels. They are not produced by a model or a live calculation."
+        subtitle={`Every dish classified by the live pipeline${data.scoped ? ' with location-local bands' : ''} — profit, volume, hidden opportunities and low performers.`}
+        demoNote="Live pipeline classifications — cut-offs are percentiles recomputed each run, never hard-coded."
+        onRefresh={refetch}
+        dataset="menu_performance"
         actions={
           <Link to="/admin/recommendations">
             <Button size="sm" variant="secondary" icon="Lightbulb">
@@ -178,27 +208,26 @@ export default function MenuIntelligence() {
       {/* Metric strip */}
       <div className="mb-5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
         {[
-          { l: 'Items analysed', v: `${MENU_INTEL.length}`, i: 'UtensilsCrossed', t: 'ember' },
+          { l: 'Items analysed', v: `${data.rows.length}`, i: 'UtensilsCrossed', t: 'ember' },
           { l: 'Average margin', v: `${avg('profitPct').toFixed(1)}%`, i: 'Percent', t: 'sage' },
           { l: 'Average rating', v: `${avg('rating').toFixed(2)}`, i: 'Star', t: 'gold' },
           { l: 'Average wastage', v: `${avg('wastage').toFixed(1)}%`, i: 'Trash2', t: 'clay' },
           { l: 'Repeat purchase', v: `${avg('repeat').toFixed(1)}%`, i: 'RefreshCw', t: 'sky' },
         ].map((k) => (
-          <KpiCard key={k.l} label={k.l} value={k.v} icon={k.i} tone={k.t} compare="across demo items" />
+          <KpiCard key={k.l} label={k.l} value={k.v} icon={k.i} tone={k.t} compare="across live items" />
         ))}
       </div>
 
       {/* Classification cards */}
       <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        {ORDER.map((key) => {
-          const c = CLASSIFICATIONS[key]
-          const examples = MENU_INTEL.filter((r) => r.classification === key).slice(0, 3)
-          const isActive = filter === key
+        {data.classes.map((c) => {
+          const examples = data.rows.filter((r) => r.classification === c.key).slice(0, 3)
+          const isActive = filter === c.key
           return (
             <Card
-              key={key}
+              key={c.key}
               as="button"
-              onClick={() => setFilter(isActive ? 'all' : key)}
+              onClick={() => setFilter(isActive ? 'all' : c.key)}
               className={cn('p-4 text-left transition-all hover:shadow-lift', isActive && 'ring-2 ring-offset-1')}
               style={isActive ? ({ boxShadow: `0 0 0 2px ${c.color}` } as React.CSSProperties) : undefined}
             >
@@ -252,31 +281,31 @@ export default function MenuIntelligence() {
           <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
             <ChartCard
               title="Revenue versus profitability"
-              subtitle="Bubble position shows units sold against contribution margin"
+              subtitle="Position shows units sold against contribution margin"
               height={330}
-              footer="Demo scatter — positions are hand-written placeholder values."
+              footer="Live scatter — one point per dish."
             >
               <ScatterPlot
-                data={SCATTER_DATA}
+                data={data.scatter}
                 xKey="units"
                 yKey="profitPct"
                 groupKey="classification"
                 xLabel="Units sold"
                 yLabel="Profit %"
-                groups={ORDER.map((k) => ({ key: k, label: CLASSIFICATIONS[k].label, color: CLASSIFICATIONS[k].color }))}
+                groups={INTEL_CLASS_ORDER.map((k) => ({ key: k, label: clsByKey[k].label, color: clsByKey[k].color }))}
                 valueFormat={(v, n) => (n === 'Profit %' ? `${v}%` : `${v}`)}
               />
             </ChartCard>
 
-            <ChartCard title="Classification share" subtitle="Demo distribution across 39 items" height={330}>
-              <DonutChart data={MENU_PERFORMANCE_DIST} valueFormat={(v) => `${v}%`} centerValue="39" centerLabel="Items" />
+            <ChartCard title="Classification share" subtitle={`Live distribution across ${data.rows.length} items`} height={330}>
+              <DonutChart data={data.dist} valueFormat={(v) => `${v}%`} centerValue={String(data.rows.length)} centerLabel="Items" />
             </ChartCard>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
-            <ChartCard title="Category comparison" subtitle="Revenue, units and margin by category — demo values" height={290}>
+            <ChartCard title="Category comparison" subtitle="Revenue and margin by category — live values" height={290}>
               <TrendChart
-                data={CATEGORY_REVENUE}
+                data={data.categoryBars}
                 xKey="category"
                 series={[
                   { key: 'revenue', label: 'Revenue', color: '#B54E17', type: 'bar' },
@@ -287,25 +316,21 @@ export default function MenuIntelligence() {
             </ChartCard>
 
             <ChartCard title="Profitability distribution" subtitle="How many items sit in each margin band" height={290}>
-              <BarSeries data={MARGIN_DISTRIBUTION} xKey="bucket" bars={[{ key: 'items', label: 'Items', color: '#C08A16' }]} valueFormat={(v) => `${v} items`} showLegend={false} />
+              <BarSeries data={data.marginDist} xKey="bucket" bars={[{ key: 'items', label: 'Items', color: '#C08A16' }]} valueFormat={(v) => `${v} items`} showLegend={false} />
             </ChartCard>
           </div>
 
           <ChartCard
             title="Sales trend"
-            subtitle="Aggregate units sold across the analysed items — demo series"
+            subtitle="Daily completed orders across the menu — live series"
             height={260}
-            footer="Illustrative eight-period series."
+            footer="Live daily series for the selected range."
           >
             <LineSeries
-              data={[
-                { p: 'W1', units: 3180 }, { p: 'W2', units: 3342 }, { p: 'W3', units: 3290 },
-                { p: 'W4', units: 3510 }, { p: 'W5', units: 3658 }, { p: 'W6', units: 3712 },
-                { p: 'W7', units: 3846 }, { p: 'W8', units: 3982 },
-              ]}
-              xKey="p"
-              lines={[{ key: 'units', label: 'Units sold', color: '#B54E17' }]}
-              valueFormat={(v) => `${num(v)} units`}
+              data={data.salesTrend}
+              xKey="d"
+              lines={[{ key: 'units', label: 'Orders', color: '#B54E17' }]}
+              valueFormat={(v) => `${num(v)} orders`}
               showLegend={false}
             />
           </ChartCard>
@@ -314,15 +339,15 @@ export default function MenuIntelligence() {
 
       {tab === 'matrix' && (
         <div className="mt-5 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-          <ChartCard title="Menu performance matrix" subtitle="Units sold against contribution margin — demo quadrants" height={420}>
+          <ChartCard title="Menu performance matrix" subtitle="Units sold against contribution margin — live quadrants" height={420}>
             <ScatterPlot
-              data={SCATTER_DATA}
+              data={data.scatter}
               xKey="units"
               yKey="profitPct"
               groupKey="classification"
               xLabel="Units sold →"
               yLabel="Profit % →"
-              groups={ORDER.map((k) => ({ key: k, label: CLASSIFICATIONS[k].label, color: CLASSIFICATIONS[k].color }))}
+              groups={INTEL_CLASS_ORDER.map((k) => ({ key: k, label: clsByKey[k].label, color: clsByKey[k].color }))}
               valueFormat={(v, n) => (n === 'Profit %' ? `${v}%` : `${v}`)}
             />
           </ChartCard>
@@ -334,31 +359,28 @@ export default function MenuIntelligence() {
               lands in suggests the type of action usually considered for it.
             </p>
             <div className="mt-4 space-y-3">
-              {ORDER.map((k) => {
-                const c = CLASSIFICATIONS[k]
-                return (
-                  <div key={k} className="rounded-xl border p-3.5" style={{ background: c.bg, borderColor: c.border }}>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[13px] font-bold" style={{ color: c.color }}>
-                        {c.label}
-                      </span>
-                      <span className="text-[11.5px] font-semibold text-ink-muted">{c.shareLabel}</span>
-                    </div>
-                    <ul className="mt-2 space-y-1">
-                      {c.criteria.map((crit) => (
-                        <li key={crit} className="flex items-start gap-1.5 text-[12px] text-ink-soft">
-                          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full" style={{ background: c.color }} />
-                          {crit}
-                        </li>
-                      ))}
-                    </ul>
+              {data.classes.map((c) => (
+                <div key={c.key} className="rounded-xl border p-3.5" style={{ background: c.bg, borderColor: c.border }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-bold" style={{ color: c.color }}>
+                      {c.label}
+                    </span>
+                    <span className="text-[11.5px] font-semibold text-ink-muted">{c.shareLabel}</span>
                   </div>
-                )
-              })}
+                  <ul className="mt-2 space-y-1">
+                    {c.criteria.map((crit) => (
+                      <li key={crit} className="flex items-start gap-1.5 text-[12px] text-ink-soft">
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full" style={{ background: c.color }} />
+                        {crit}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
-            <DemoNote className="mt-4">
-              Quadrant boundaries in this prototype are fixed display thresholds, not computed cut-offs.
-            </DemoNote>
+            <LiveNote className="mt-4">
+              Quadrant boundaries are live percentiles (p70 demand/profit, p75 wastage) recomputed on every pipeline run.
+            </LiveNote>
           </Card>
         </div>
       )}
@@ -376,11 +398,11 @@ export default function MenuIntelligence() {
                   </option>
                 ))}
               </Select>
-              <Select value={filter} onChange={(e) => setFilter(e.target.value as any)} className="w-auto" aria-label="Classification">
+              <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-auto" aria-label="Classification">
                 <option value="all">All classifications</option>
-                {ORDER.map((k) => (
-                  <option key={k} value={k}>
-                    {CLASSIFICATIONS[k].label}
+                {data.classes.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
                   </option>
                 ))}
               </Select>
@@ -408,7 +430,7 @@ export default function MenuIntelligence() {
               rows={rows}
               rowKey={(r) => r.id}
               pageSize={12}
-              onRowClick={(r) => setActive(r)}
+              onRowClick={(r) => { setActive(r); setDetailTab('Overview') }}
               initialSort={{ key: 'revenue', dir: 'desc' }}
               emptyTitle="No items match these filters"
               emptyMessage="Try clearing the classification or category filter."
@@ -433,14 +455,13 @@ export default function MenuIntelligence() {
 
       {tab === 'classifications' && (
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          {ORDER.map((k) => {
-            const c = CLASSIFICATIONS[k]
-            const items = MENU_INTEL.filter((r) => r.classification === k)
+          {data.classes.map((c) => {
+            const items = data.rows.filter((r) => r.classification === c.key)
             const revenue = items.reduce((s, r) => s + r.revenue, 0)
             const units = items.reduce((s, r) => s + r.units, 0)
-            const margin = items.reduce((s, r) => s + r.profitPct, 0) / items.length
+            const margin = items.length ? items.reduce((s, r) => s + r.profitPct, 0) / items.length : 0
             return (
-              <Card key={k} className="overflow-hidden">
+              <Card key={c.key} className="overflow-hidden">
                 <div className="border-b border-line p-5" style={{ background: c.bg }}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -469,7 +490,7 @@ export default function MenuIntelligence() {
                   {[
                     { l: 'Units sold', v: num(units) },
                     { l: 'Revenue', v: money(revenue, { compact: true }) },
-                    { l: 'Avg rating', v: (items.reduce((s, r) => s + r.rating, 0) / items.length).toFixed(2) },
+                    { l: 'Avg rating', v: items.length ? (items.reduce((s, r) => s + r.rating, 0) / items.length).toFixed(2) : '—' },
                   ].map((s) => (
                     <div key={s.l} className="px-4 py-3">
                       <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">{s.l}</p>
@@ -492,7 +513,7 @@ export default function MenuIntelligence() {
                     <p className="text-[11.5px] font-bold uppercase tracking-wide text-ink-faint">Items in this group</p>
                     <div className="mt-2 space-y-1.5">
                       {items.slice(0, 5).map((i) => (
-                        <button key={i.id} onClick={() => { setActive(i); setTab('items') }} className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-canvas">
+                        <button key={i.id} onClick={() => { setActive(i); setDetailTab('Overview') }} className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-canvas">
                           <span className="truncate text-[12.5px] text-ink-soft">{i.name}</span>
                           <span className="shrink-0 text-[12px] font-semibold tabular-nums text-ink">{i.profitPct.toFixed(1)}%</span>
                         </button>
@@ -512,14 +533,14 @@ export default function MenuIntelligence() {
         onClose={() => setActive(null)}
         width="xl"
         title={active?.name ?? ''}
-        subtitle={active ? `${active.category} · ${money(active.revenue, { compact: true })} demo revenue · ${num(active.units)} units` : ''}
+        subtitle={active ? `${active.category} · ${money(active.revenue, { compact: true })} live revenue · ${num(active.units)} units` : ''}
         badge={
           active ? (
             <span
               className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11.5px] font-bold"
-              style={{ background: CLASSIFICATIONS[active.classification].bg, color: CLASSIFICATIONS[active.classification].color, borderColor: CLASSIFICATIONS[active.classification].border }}
+              style={{ background: clsByKey[active.classification].bg, color: clsByKey[active.classification].color, borderColor: clsByKey[active.classification].border }}
             >
-              {CLASSIFICATIONS[active.classification].label}
+              {clsByKey[active.classification].label}
             </span>
           ) : undefined
         }
@@ -535,6 +556,9 @@ export default function MenuIntelligence() {
             </div>
 
             <div className="space-y-4 p-5">
+              {detailLoading && !detail && (
+                <p className="py-6 text-center text-[13px] text-ink-muted">Loading item detail…</p>
+              )}
               {detailTab === 'Overview' && (
                 <>
                   <div className="grid gap-3 sm:grid-cols-4">
@@ -552,17 +576,21 @@ export default function MenuIntelligence() {
                   </div>
                   <Card className="p-4">
                     <div className="flex flex-wrap items-start gap-5">
-                      <ProgressRing value={active.profitPct} color={CLASSIFICATIONS[active.classification].color} size={72} stroke={7}>
+                      <ProgressRing value={active.profitPct} color={clsByKey[active.classification].color} size={72} stroke={7}>
                         {active.profitPct.toFixed(0)}%
                       </ProgressRing>
                       <div className="min-w-[200px] flex-1">
-                        <p className="text-[13px] font-semibold text-ink">{CLASSIFICATIONS[active.classification].label}</p>
-                        <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">{CLASSIFICATIONS[active.classification].desc}</p>
+                        <p className="text-[13px] font-semibold text-ink">{clsByKey[active.classification].label}</p>
+                        <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">{clsByKey[active.classification].desc}</p>
                       </div>
                       <div className="w-full sm:w-40">
-                        <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">Sales trend</p>
+                        <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">Monthly units</p>
                         <div className="mt-1.5">
-                          <Sparkline values={active.trend} color={CLASSIFICATIONS[active.classification].color} width={140} height={40} />
+                          {monthUnits.length > 1 ? (
+                            <Sparkline values={monthUnits} color={clsByKey[active.classification].color} width={140} height={40} />
+                          ) : (
+                            <p className="text-[12px] text-ink-faint">Single month of sales</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -571,10 +599,11 @@ export default function MenuIntelligence() {
                     <p className="text-[13px] font-semibold text-ink">Key metrics</p>
                     <div className="mt-1 divide-y divide-line">
                       <MetricRow label="Estimated cost" value={money(active.cost, { compact: true })} />
-                      <MetricRow label="Average rating" value={`${active.rating} / 5`} />
+                      <MetricRow label="Average rating" value={active.nRatings > 0 ? `${active.rating.toFixed(2)} / 5 (${num(active.nRatings)})` : 'No ratings yet'} />
                       <MetricRow label="Repeat purchase rate" value={`${active.repeat}%`} />
                       <MetricRow label="Wastage" value={`${active.wastage.toFixed(1)}%`} tone={active.wastage > 8 ? 'text-clay-600' : undefined} />
-                      <MetricRow label="Promotion dependency" value={`${active.promoDependency}%`} hint="Share of units sold while an offer was active — demo value" />
+                      <MetricRow label="Promotion dependency" value={`${active.promoDependency}%`} hint="Share of units sold while an offer was active — live pipeline value" />
+                      {detail?.slow && <MetricRow label="Slow mover" value={detail.slow.slow_moving ? `Yes — ${detail.slow.signals}` : 'No'} />}
                     </div>
                   </Card>
                 </>
@@ -583,20 +612,23 @@ export default function MenuIntelligence() {
               {detailTab === 'Sales' && (
                 <div className="space-y-4">
                   <Card className="p-4">
-                    <p className="text-[13px] font-semibold text-ink">Units sold — demo series</p>
+                    <p className="text-[13px] font-semibold text-ink">Monthly units and revenue — live</p>
                     <div className="mt-3 h-[220px]">
                       <TrendChart
-                        data={active.trend.map((v, i) => ({ p: `P${i + 1}`, units: v }))}
-                        xKey="p"
-                        series={[{ key: 'units', label: 'Units (tens)', color: '#B54E17', type: 'area' }]}
-                        showLegend={false}
+                        data={monthSales}
+                        xKey="m"
+                        series={[
+                          { key: 'units', label: 'Units', color: '#B54E17', type: 'area' },
+                          { key: 'revenue', label: 'Revenue', color: '#5E8C4A', type: 'line' },
+                        ]}
+                        valueFormat={(v, n) => (n === 'Revenue' ? money(v, { compact: true }) : `${num(v)} units`)}
                       />
                     </div>
                   </Card>
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <KpiCard label="Units sold" value={num(active.units)} compare="demo period" icon="Package" tone="ember" />
-                    <KpiCard label="Revenue" value={money(active.revenue, { compact: true })} compare="demo period" icon="Wallet" tone="sky" />
-                    <KpiCard label="Avg units / day" value={num(Math.round(active.units / 30))} compare="demo period" icon="CalendarDays" tone="gold" />
+                    <KpiCard label="Units sold" value={num(active.units)} compare="all-time live" icon="Package" tone="ember" />
+                    <KpiCard label="Revenue" value={money(active.revenue, { compact: true })} compare="all-time live" icon="Wallet" tone="sky" />
+                    <KpiCard label="Avg units / day" value={num(Math.round(active.units / daysActive))} compare={`${num(daysActive)} days on sale`} icon="CalendarDays" tone="gold" />
                   </div>
                 </div>
               )}
@@ -604,20 +636,20 @@ export default function MenuIntelligence() {
               {detailTab === 'Profitability' && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <KpiCard label="Revenue" value={money(active.revenue, { compact: true })} compare="demo" icon="Wallet" tone="ember" />
-                    <KpiCard label="Estimated cost" value={money(active.cost, { compact: true })} compare="demo" icon="Coins" tone="clay" />
-                    <KpiCard label="Contribution" value={money(active.cm, { compact: true })} compare="demo" icon="TrendingUp" tone="sage" />
+                    <KpiCard label="Revenue" value={money(active.revenue, { compact: true })} compare="live" icon="Wallet" tone="ember" />
+                    <KpiCard label="Estimated cost" value={money(active.cost, { compact: true })} compare="live" icon="Coins" tone="clay" />
+                    <KpiCard label="Contribution" value={money(active.cm, { compact: true })} compare="live" icon="TrendingUp" tone="sage" />
                   </div>
                   <Card className="p-4">
-                    <p className="text-[13px] font-semibold text-ink">Cost versus contribution — demo split</p>
+                    <p className="text-[13px] font-semibold text-ink">Cost versus contribution — live split</p>
                     <div className="mt-4 space-y-3">
                       <div>
                         <div className="flex justify-between text-[12px] text-ink-muted">
                           <span>Estimated cost</span>
-                          <span>{((active.cost / active.revenue) * 100).toFixed(1)}%</span>
+                          <span>{active.revenue > 0 ? ((active.cost / active.revenue) * 100).toFixed(1) : '0.0'}%</span>
                         </div>
                         <div className="mt-1 h-2 overflow-hidden rounded-full bg-line">
-                          <div className="h-full rounded-full bg-clay-500" style={{ width: `${(active.cost / active.revenue) * 100}%` }} />
+                          <div className="h-full rounded-full bg-clay-500" style={{ width: `${active.revenue > 0 ? (active.cost / active.revenue) * 100 : 0}%` }} />
                         </div>
                       </div>
                       <div>
@@ -626,7 +658,7 @@ export default function MenuIntelligence() {
                           <span>{active.profitPct.toFixed(1)}%</span>
                         </div>
                         <div className="mt-1 h-2 overflow-hidden rounded-full bg-line">
-                          <div className="h-full rounded-full bg-sage-500" style={{ width: `${active.profitPct}%` }} />
+                          <div className="h-full rounded-full bg-sage-500" style={{ width: `${Math.min(100, active.profitPct)}%` }} />
                         </div>
                       </div>
                     </div>
@@ -637,17 +669,15 @@ export default function MenuIntelligence() {
               {detailTab === 'Customer behaviour' && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <KpiCard label="Repeat purchase" value={`${active.repeat}%`} compare="demo" icon="RefreshCw" tone="ember" />
-                    <KpiCard label="Promotion dependency" value={`${active.promoDependency}%`} compare="demo" icon="BadgePercent" tone="gold" />
-                    <KpiCard label="Average rating" value={`${active.rating}`} compare="demo" icon="Star" tone="sage" />
+                    <KpiCard label="Repeat purchase" value={`${active.repeat}%`} compare="live" icon="RefreshCw" tone="ember" />
+                    <KpiCard label="Promotion dependency" value={`${active.promoDependency}%`} compare="live" icon="BadgePercent" tone="gold" />
+                    <KpiCard label="Average rating" value={active.nRatings > 0 ? active.rating.toFixed(2) : '—'} compare="live" icon="Star" tone="sage" />
                   </div>
                   <Card className="p-4">
-                    <p className="text-[13px] font-semibold text-ink">Ordering channel mix — demo split</p>
+                    <p className="text-[13px] font-semibold text-ink">Ordering channel mix — live split</p>
                     <div className="mt-3 h-[220px]">
                       <BarSeries
-                        data={[
-                          { c: 'Dine-in', v: 38 }, { c: 'Website', v: 24 }, { c: 'Delivery', v: 26 }, { c: 'Takeaway', v: 12 },
-                        ]}
+                        data={channelMix}
                         xKey="c"
                         bars={[{ key: 'v', label: 'Share %', color: '#2F6FA8' }]}
                         valueFormat={(v) => `${v}%`}
@@ -661,17 +691,15 @@ export default function MenuIntelligence() {
               {detailTab === 'Ratings' && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <KpiCard label="Average rating" value={`${active.rating}`} compare="demo" icon="Star" tone="gold" />
-                    <KpiCard label="Reviews" value={num(Math.round(active.units * 0.42))} compare="demo" icon="MessageSquare" tone="sky" />
-                    <KpiCard label="Rating vs menu avg" value={`${(active.rating - 4.62).toFixed(2)}`} compare="demo" icon="ArrowUpRight" tone="sage" />
+                    <KpiCard label="Average rating" value={active.nRatings > 0 ? active.rating.toFixed(2) : '—'} compare="live" icon="Star" tone="gold" />
+                    <KpiCard label="Reviews" value={num(active.nRatings)} compare="live" icon="MessageSquare" tone="sky" />
+                    <KpiCard label="Rating vs menu avg" value={active.nRatings > 0 ? (active.rating - data.menuAvgRating).toFixed(2) : '—'} compare="live" icon="ArrowUpRight" tone="sage" />
                   </div>
                   <Card className="p-4">
-                    <p className="text-[13px] font-semibold text-ink">Rating distribution — demo values</p>
+                    <p className="text-[13px] font-semibold text-ink">Rating distribution — live values</p>
                     <div className="mt-3 h-[220px]">
                       <BarSeries
-                        data={[
-                          { s: '5★', v: 62 }, { s: '4★', v: 24 }, { s: '3★', v: 8 }, { s: '2★', v: 4 }, { s: '1★', v: 2 },
-                        ]}
+                        data={rateDist}
                         xKey="s"
                         bars={[{ key: 'v', label: 'Reviews %', color: '#C08A16' }]}
                         valueFormat={(v) => `${v}%`}
@@ -685,17 +713,17 @@ export default function MenuIntelligence() {
               {detailTab === 'Wastage' && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <KpiCard label="Wastage" value={`${active.wastage.toFixed(1)}%`} compare="demo" icon="Trash2" tone="clay" />
-                    <KpiCard label="Estimated waste cost" value={money(Math.round(active.cost * (active.wastage / 100)), { compact: true })} compare="demo" icon="Coins" tone="clay" />
-                    <KpiCard label="Units not sold" value={num(Math.round(active.units * (active.wastage / 100)))} compare="demo" icon="PackageMinus" tone="gold" />
+                    <KpiCard label="Wastage" value={`${active.wastage.toFixed(1)}%`} compare="live" icon="Trash2" tone="clay" />
+                    <KpiCard label="Recorded waste cost" value={waste ? money(waste.cost, { compact: true }) : '—'} compare="live" icon="Coins" tone="clay" />
+                    <KpiCard label="Units wasted" value={num(Math.round(waste?.qty ?? active.wastedQty))} compare="live" icon="PackageMinus" tone="gold" />
                   </div>
                   <Card className="p-4">
-                    <p className="text-[13px] font-semibold text-ink">Prepared versus consumed — demo values</p>
+                    <p className="text-[13px] font-semibold text-ink">Sold versus recorded waste — live values</p>
                     <div className="mt-3 h-[220px]">
                       <BarSeries
                         data={[
-                          { l: 'Prepared', v: active.units },
-                          { l: 'Consumed', v: Math.round(active.units * (1 - active.wastage / 100)) },
+                          { l: 'Sold', v: active.units },
+                          { l: 'Wasted', v: Math.round(waste?.qty ?? active.wastedQty) },
                         ]}
                         xKey="l"
                         bars={[{ key: 'v', label: 'Units', color: '#B54E17' }]}
@@ -710,28 +738,25 @@ export default function MenuIntelligence() {
               {detailTab === 'Pricing' && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <KpiCard label="Current price" value={money(Math.round(active.revenue / active.units))} compare="demo" icon="Tags" tone="ember" />
-                    <KpiCard label="Cost per unit" value={money(Math.round(active.cost / active.units))} compare="demo" icon="Coins" tone="clay" />
-                    <KpiCard label="Margin" value={`${active.profitPct.toFixed(1)}%`} compare="demo" icon="Percent" tone="sage" />
+                    <KpiCard label="Avg selling price" value={active.units > 0 ? money(active.revenue / active.units) : '—'} compare="live" icon="Tags" tone="ember" />
+                    <KpiCard label="Cost per unit" value={active.units > 0 ? money(active.cost / active.units) : '—'} compare="live" icon="Coins" tone="clay" />
+                    <KpiCard label="Margin" value={`${active.profitPct.toFixed(1)}%`} compare="live" icon="Percent" tone="sage" />
                   </div>
                   <Card className="p-4">
-                    <p className="text-[13px] font-semibold text-ink">Price history — demo series</p>
-                    <div className="mt-3 h-[220px]">
-                      <LineSeries
-                        data={[
-                          { m: 'Apr', p: Math.round((active.revenue / active.units) * 0.9) },
-                          { m: 'May', p: Math.round((active.revenue / active.units) * 0.9) },
-                          { m: 'Jun', p: Math.round((active.revenue / active.units) * 0.95) },
-                          { m: 'Jul', p: Math.round((active.revenue / active.units) * 0.95) },
-                          { m: 'Aug', p: Math.round((active.revenue / active.units) * 0.95) },
-                          { m: 'Sep', p: Math.round(active.revenue / active.units) },
-                        ]}
-                        xKey="m"
-                        lines={[{ key: 'p', label: 'Price', color: '#B54E17' }]}
-                        valueFormat={(v) => money(v)}
-                        showLegend={false}
-                      />
-                    </div>
+                    <p className="text-[13px] font-semibold text-ink">Price history — live records</p>
+                    {(detail?.price_history ?? []).length > 0 ? (
+                      <div className="mt-3 h-[220px]">
+                        <LineSeries
+                          data={(detail?.price_history ?? []).map((p) => ({ m: fmtDate(p.effective_from), p: p.price }))}
+                          xKey="m"
+                          lines={[{ key: 'p', label: 'Price', color: '#B54E17' }]}
+                          valueFormat={(v) => money(v)}
+                          showLegend={false}
+                        />
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[13px] text-ink-muted">No price changes recorded for this item.</p>
+                    )}
                   </Card>
                 </div>
               )}
@@ -739,27 +764,37 @@ export default function MenuIntelligence() {
               {detailTab === 'Promotions' && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <KpiCard label="Promotion dependency" value={`${active.promoDependency}%`} compare="demo" icon="BadgePercent" tone="gold" />
-                    <KpiCard label="Units on offer" value={num(Math.round(active.units * (active.promoDependency / 100)))} compare="demo" icon="Package" tone="ember" />
-                    <KpiCard label="Margin impact" value={`−${(active.promoDependency / 6).toFixed(1)} pts`} compare="illustrative" icon="TrendingDown" tone="clay" />
+                    <KpiCard label="Promotion dependency" value={`${active.promoDependency}%`} compare="live" icon="BadgePercent" tone="gold" />
+                    <KpiCard label="Units on offer (est.)" value={num(Math.round(active.units * (active.promoDependency / 100)))} compare="live" icon="Package" tone="ember" />
+                    <KpiCard label="Avg discount given" value={`${active.avgDiscount}%`} compare="live" icon="TrendingDown" tone="clay" />
                   </div>
                   <Card className="p-4">
-                    <p className="text-[13px] font-semibold text-ink">Promotions including this item — demo records</p>
-                    <ul className="mt-3 space-y-2">
-                      {active.promoDependency > 25
-                        ? ['Wednesday Pizza Night · 20% off', 'Delivery platform bundle · 15% off'].map((p) => (
-                            <li key={p} className="flex items-center justify-between gap-3 rounded-xl border border-line px-3.5 py-2.5">
-                              <span className="text-[13px] text-ink-soft">{p}</span>
-                              <Badge tone="gold">Active</Badge>
+                    <p className="text-[13px] font-semibold text-ink">Promotions covering this item — live records</p>
+                    {itemPromos.length === 0 ? (
+                      <p className="mt-2 text-[13px] text-ink-muted">No promotion has ever targeted this item.</p>
+                    ) : (
+                      <ul className="mt-3 space-y-2">
+                        {itemPromos.map((p) => {
+                          const s = p.start_date.slice(0, 10)
+                          const e = p.end_date.slice(0, 10)
+                          const max = data.dataMax ?? ''
+                          const liveNow = max !== '' && s <= max && max <= e
+                          return (
+                            <li key={p.promotion_id} className="flex items-center justify-between gap-3 rounded-xl border border-line px-3.5 py-2.5">
+                              <span className="min-w-0">
+                                <span className="block truncate text-[13px] font-semibold text-ink">
+                                  {p.promotion_name} · {Math.round(p.discount_pct * 100)}% off
+                                </span>
+                                <span className="block text-[12px] text-ink-muted">
+                                  {fmtDate(s)} → {fmtDate(e)} · {p.scope}
+                                </span>
+                              </span>
+                              <Badge tone={liveNow ? 'sage' : 'neutral'}>{liveNow ? 'Active' : 'Ended'}</Badge>
                             </li>
-                          ))
-                        : ['Late Night Dessert · free item', 'Website welcome offer · 10% off'].map((p) => (
-                            <li key={p} className="flex items-center justify-between gap-3 rounded-xl border border-line px-3.5 py-2.5">
-                              <span className="text-[13px] text-ink-soft">{p}</span>
-                              <Badge tone="neutral">Occasional</Badge>
-                            </li>
-                          ))}
-                    </ul>
+                          )
+                        })}
+                      </ul>
+                    )}
                   </Card>
                 </div>
               )}
@@ -767,41 +802,45 @@ export default function MenuIntelligence() {
               {detailTab === 'Location performance' && (
                 <div className="space-y-4">
                   <Card>
-                    <CardHeader title="Performance by location" subtitle="Demo branch comparison for this item" className="border-b" />
-                    <div className="divide-y divide-line">
-                      {[
-                        { l: 'Clifton Branch', u: Math.round(active.units * 0.46), r: Math.round(active.revenue * 0.48) },
-                        { l: 'Downtown Branch', u: Math.round(active.units * 0.34), r: Math.round(active.revenue * 0.33) },
-                        { l: 'Gulshan Branch', u: Math.round(active.units * 0.2), r: Math.round(active.revenue * 0.19) },
-                      ].map((x) => (
-                        <div key={x.l} className="flex items-center justify-between gap-3 px-4 py-3">
-                          <span className="text-[13px] font-medium text-ink">{x.l}</span>
-                          <span className="text-[12.5px] text-ink-muted">{num(x.u)} units</span>
-                          <span className="w-24 text-right text-[13px] font-semibold tabular-nums text-ink">{money(x.r, { compact: true })}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <CardHeader title="Performance by location" subtitle="Live branch comparison for this item" className="border-b" />
+                    {(detail?.locations ?? []).length === 0 ? (
+                      <p className="px-4 py-4 text-[13px] text-ink-muted">No per-location sales recorded.</p>
+                    ) : (
+                      <div className="divide-y divide-line">
+                        {(detail?.locations ?? []).map((x) => (
+                          <div key={x.restaurant_id} className="flex items-center justify-between gap-3 px-4 py-3">
+                            <span className="min-w-0">
+                              <span className="block truncate text-[13px] font-medium text-ink">{x.restaurant_name}</span>
+                              <span className="block text-[11.5px] text-ink-faint">
+                                {x.city} · {x.location_class}
+                                {x.differs_from_global ? ' · differs from global' : ''}
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-[12.5px] text-ink-muted">{num(x.units_sold)} units</span>
+                            <span className="w-24 shrink-0 text-right text-[13px] font-semibold tabular-nums text-ink">{money(x.revenue, { compact: true })}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </Card>
-                  <Card className="p-4">
-                    <p className="text-[13px] font-semibold text-ink">Units by location — demo values</p>
-                    <div className="mt-3 h-[220px]">
-                      <BarSeries
-                        data={[
-                          { l: 'Clifton', v: Math.round(active.units * 0.46) },
-                          { l: 'Downtown', v: Math.round(active.units * 0.34) },
-                          { l: 'Gulshan', v: Math.round(active.units * 0.2) },
-                        ]}
-                        xKey="l"
-                        bars={[{ key: 'v', label: 'Units', color: '#B54E17' }]}
-                        valueFormat={(v) => `${num(v)} units`}
-                        showLegend={false}
-                      />
-                    </div>
-                  </Card>
+                  {(detail?.locations ?? []).length > 0 && (
+                    <Card className="p-4">
+                      <p className="text-[13px] font-semibold text-ink">Units by location — live values</p>
+                      <div className="mt-3 h-[220px]">
+                        <BarSeries
+                          data={(detail?.locations ?? []).slice(0, 8).map((x) => ({ l: x.city, v: x.units_sold }))}
+                          xKey="l"
+                          bars={[{ key: 'v', label: 'Units', color: '#B54E17' }]}
+                          valueFormat={(v) => `${num(v)} units`}
+                          showLegend={false}
+                        />
+                      </div>
+                    </Card>
+                  )}
                 </div>
               )}
 
-              <DemoNote>All figures in this panel are illustrative demo values for interface presentation.</DemoNote>
+              <LiveNote>All figures in this panel are live pipeline values for {active.id}.</LiveNote>
             </div>
           </div>
         )}

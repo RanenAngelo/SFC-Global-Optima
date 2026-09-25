@@ -1921,3 +1921,93 @@ export function useRecommendationsData() {
 
   return { data: shaped, loading: q.loading, error: q.error, refetch: q.refetch }
 }
+
+/* ───────────────────────────── Anomalies ───────────────────────────── */
+
+export type AnomalyAlert = {
+  id: string
+  kind: string
+  title: string
+  severity: 'Critical' | 'High' | 'Medium'
+  entity: string
+  entityName: string
+  entityKind: string
+  metric: string
+  actual: number
+  baseline: number
+  z: number | null
+  deltaPct: number | null
+  when: string
+  day: string
+  action: string
+}
+
+const ANOMALY_KIND_LABEL: Record<string, string> = {
+  sales_spike: 'Sales spike',
+  high_order_value: 'High order value',
+  identical_burst: 'Identical burst',
+}
+
+const ANOMALY_ACTION: Record<string, string> = {
+  sales_spike: 'Check for a local event, bulk order or promotion overlap, then confirm the takings reconcile.',
+  high_order_value: 'Verify the order Packed correctly and the payment cleared; large baskets are often legitimate catering.',
+  identical_burst: 'Inspect the rating source for ballot-stuffing or a logging glitch before acting on the score.',
+}
+
+export function useAnomaliesData() {
+  const q = useApi<{
+    rows: { category: string; metric: string; entity: string; timestamp: string; actual: number; baseline: number; deviation_z: number | null; severity: string; explanation: string }[]
+    by_category: { category: string; n: number }[]
+    by_severity: { severity: string; n: number }[]
+  }>('/anomalies', { params: { limit: 500 } })
+  const items = useApi<{ item_id: string; item_name: string }[]>('/menu/items')
+  const { options: meta } = useMeta()
+
+  const shaped = useMemo(() => {
+    if (!q.data) return null
+    const restName = (id: string) => meta?.restaurants.find((r) => r.restaurant_id === id)?.restaurant_name ?? id
+    const itemName = (id: string) => (items.data ?? []).find((m) => m.item_id === id)?.item_name ?? id
+    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+    const rows: AnomalyAlert[] = q.data.rows.map((r, i) => {
+      const [prefix, ref] = r.entity.split(':')
+      const entityName = prefix === 'restaurant' ? restName(ref) : prefix === 'item' ? itemName(ref) : ref
+      return {
+        id: `${r.category}-${r.entity}-${r.timestamp || i}`,
+        kind: ANOMALY_KIND_LABEL[r.category] ?? r.category,
+        title: r.explanation,
+        severity: cap(r.severity) as AnomalyAlert['severity'],
+        entity: ref,
+        entityName,
+        entityKind: prefix === 'restaurant' ? 'Branch' : prefix === 'item' ? 'Menu item' : 'Order',
+        metric: r.metric,
+        actual: r.actual,
+        baseline: r.baseline,
+        z: r.deviation_z,
+        deltaPct: r.baseline ? ((r.actual - r.baseline) / Math.abs(r.baseline)) * 100 : null,
+        when: r.timestamp ? fmtDate(r.timestamp) : 'Undated',
+        day: r.timestamp ? r.timestamp.slice(0, 10) : '',
+        action: ANOMALY_ACTION[r.category] ?? 'Review the underlying records before deciding.',
+      }
+    })
+
+    const days = Array.from(new Set(rows.filter((r) => r.day).map((r) => r.day))).sort().slice(-14)
+    const trend = days.map((d) => {
+      const o: Record<string, string | number> = { d: d.slice(5) }
+      for (const c of q.data?.by_category ?? []) {
+        o[c.category] = rows.filter((r) => r.day === d && (ANOMALY_KIND_LABEL[c.category] ?? c.category) === r.kind).length
+      }
+      return o
+    })
+    const trendCats = (q.data.by_category ?? []).map((c, i) => ({
+      key: c.category,
+      label: ANOMALY_KIND_LABEL[c.category] ?? c.category,
+      color: ['#96352C', '#C08A16', '#2F6FA8'][i % 3],
+    }))
+    const kinds = (q.data.by_category ?? []).map((c) => ({ kind: ANOMALY_KIND_LABEL[c.category] ?? c.category, count: c.n }))
+
+    return { rows, trend, trendCats, kinds }
+  }, [q.data, items.data, meta])
+
+  return { data: shaped, loading: q.loading || items.loading, error: q.error ?? items.error, refetch: q.refetch }
+}

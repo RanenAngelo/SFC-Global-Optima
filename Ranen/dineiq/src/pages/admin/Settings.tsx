@@ -1,14 +1,13 @@
 import React, { useState } from 'react'
 import {
-  Avatar, Badge, Button, Card, CardHeader, Checkbox, Field, Icon, Input, Select, Switch, Textarea, Tooltip, cn,
+  Badge, Button, Card, CardHeader, Field, Icon, Input, Select, Switch, Textarea, cn,
 } from '../../components/ui/primitives'
-import { Modal, useToast } from '../../components/ui/overlay'
-import { EmptyState } from '../../components/ui/states'
+import { useToast } from '../../components/ui/overlay'
 import { PageHeader } from '../../components/admin/PageHeader'
-import { DemoNote, DineIQMark, MetricRow } from '../../components/shared'
-import { ROLES, TEAM } from '../../lib/data/analytics'
-import { LOCATIONS } from '../../lib/data/analytics'
+import { DineIQMark, LiveNote, MetricRow } from '../../components/shared'
+import { useAuth, useMeta } from '../../lib/api'
 import { useWorkspace } from '../../store/app'
+import { readPref, writePref } from '../../lib/utils'
 
 const SECTIONS = [
   { key: 'profile', label: 'Restaurant profile', icon: 'Store' },
@@ -25,22 +24,42 @@ const SECTIONS = [
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+const DEFAULT_PROFILE = {
+  name: 'DineIQ Network', cuisine: 'grill', phone: '+92 21 111 111 111', email: 'hello@dineiq.example',
+  address: '20 branches nationwide', city: 'Karachi', postal: '75600',
+  desc: 'Multi-branch restaurant network analysed by DineIQ.',
+}
+const DEFAULT_HOURS = DAYS.map((d) => ({ day: d, open: '11:00', close: d === 'Friday' || d === 'Saturday' ? '00:30' : '23:00', closed: false }))
+const DEFAULT_NOTIF = { margin: true, wastage: true, anomaly: true, rating: false, promotion: true, forecast: false, daily: true }
+const DEFAULT_PREFS = { buffer: '10', autoHide: false, calories: true, spice: true, allergens: true, outOfStock: true }
+const DEFAULT_TAX = { currency: 'USD', rate: '5', service: '0', rounding: 'nearest' }
+
+const ROLE_MATRIX = [
+  { role: 'Viewer', desc: 'Read-only access to dashboards, analytics and report previews.', perms: ['Dashboards', 'Analytics', 'Previews'] },
+  { role: 'Analyst', desc: 'Everything a viewer can do, plus scenario simulations and recommendation workflow.', perms: ['What-if lab', 'Recommendation states'] },
+  { role: 'Manager', desc: 'Everything an analyst can do, plus menu edits, order status and dataset exports.', perms: ['Menu edits', 'Order status', 'CSV/XLSX export'] },
+  { role: 'Admin', desc: 'Full access to every module and management control.', perms: ['All modules', 'All controls'] },
+]
+
 export default function Settings() {
   const { push } = useToast()
+  const { user, logout, can } = useAuth()
+  const { options: meta } = useMeta()
   const { theme, toggleTheme, sidebarCollapsed, toggleSidebar } = useWorkspace()
   const [section, setSection] = useState('profile')
-  const [branches, setBranches] = useState(LOCATIONS.map((l) => ({ ...l })))
-  const [inviteOpen, setInviteOpen] = useState(false)
-  const [hours, setHours] = useState(
-    DAYS.map((d) => ({ day: d, open: '11:00', close: d === 'Friday' || d === 'Saturday' ? '00:30' : '23:00', closed: false })),
-  )
-  const [notif, setNotif] = useState({
-    margin: true, wastage: true, anomaly: true, rating: false, promotion: true, forecast: false, daily: true,
-  })
-  const [prefs, setPrefs] = useState({ buffer: '10', autoHide: false, calories: true, spice: true, allergens: true, outOfStock: true })
-  const [tax, setTax] = useState({ currency: 'PKR', rate: '5', service: '0', rounding: 'nearest' })
+  const [profile, setProfile] = useState(() => readPref('settings_profile', DEFAULT_PROFILE))
+  const [hiddenBranches, setHiddenBranches] = useState<string[]>(() => readPref<string[]>('settings_hidden_branches', []))
+  const [hours, setHours] = useState(() => readPref('settings_hours', DEFAULT_HOURS))
+  const [notif, setNotif] = useState(() => readPref('settings_notif', DEFAULT_NOTIF))
+  const [prefs, setPrefs] = useState(() => readPref('settings_menu_prefs', DEFAULT_PREFS))
+  const [tax, setTax] = useState(() => readPref('settings_tax', DEFAULT_TAX))
 
-  const save = (label: string) => push({ title: `${label} saved`, body: 'Demo only — nothing is persisted', tone: 'success' })
+  const save = (key: string, value: unknown, label: string) => {
+    writePref(key, value)
+    push({ title: `${label} saved`, body: 'Stored in this browser', tone: 'success' })
+  }
+
+  const branches = meta?.restaurants ?? []
 
   return (
     <div>
@@ -48,7 +67,7 @@ export default function Settings() {
         eyebrow="System"
         title="Settings"
         subtitle="Restaurant profile, branches, operating hours, team access and workspace preferences."
-        demoNote="Settings in this prototype are visual controls only. No configuration is saved to a server."
+        demoNote="Workspace settings are stored in this browser. Branch and catalogue data is live from the API."
       />
 
       <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
@@ -71,36 +90,27 @@ export default function Settings() {
         <div className="min-w-0 space-y-5">
           {section === 'profile' && (
             <Card className="p-5">
-              <CardHeader title="Restaurant profile" subtitle="How Maison Ember appears across DineIQ" className="-mx-5 -mt-5 mb-5 border-b px-5 py-4" />
+              <CardHeader title="Restaurant profile" subtitle="How the network appears across DineIQ" className="-mx-5 -mt-5 mb-5 border-b px-5 py-4" />
               <div className="flex flex-wrap items-start gap-5">
                 <div className="relative">
                   <div className="flex h-24 w-24 items-center justify-center rounded-2xl border border-line bg-canvas">
                     <DineIQMark size={44} />
                   </div>
-                  <button className="focus-ring absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-ink text-white shadow-card" aria-label="Change logo">
-                    <Icon name="Camera" size={15} />
-                  </button>
                 </div>
                 <div className="min-w-[200px] flex-1">
-                  <p className="text-[13.5px] font-semibold text-ink">Restaurant logo</p>
-                  <p className="text-[12.5px] text-ink-muted">Square PNG or SVG, at least 256×256 pixels.</p>
-                  <div className="mt-2.5 flex gap-2">
-                    <Button size="xs" variant="secondary" icon="Upload">
-                      Upload logo
-                    </Button>
-                    <Button size="xs" variant="ghost" icon="Trash2" className="text-clay-600">
-                      Remove
-                    </Button>
-                  </div>
+                  <p className="text-[13.5px] font-semibold text-ink">Network identity</p>
+                  <p className="text-[12.5px] text-ink-muted">Stored in this browser — logo upload is not available in this build.</p>
                 </div>
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <Field label="Restaurant name" required>
-                  <Input defaultValue="Maison Ember" />
+                <Field label="Network name" required>
+                  <Input value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
                 </Field>
                 <Field label="Cuisine type">
                   <Select
+                    value={profile.cuisine}
+                    onChange={(e) => setProfile({ ...profile, cuisine: e.target.value })}
                     options={[
                       { label: 'Woodfire & grill', value: 'grill' },
                       { label: 'Italian', value: 'italian' },
@@ -110,28 +120,28 @@ export default function Settings() {
                   />
                 </Field>
                 <Field label="Primary phone">
-                  <Input defaultValue="+92 21 111 362 637" icon="Phone" />
+                  <Input value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} icon="Phone" />
                 </Field>
                 <Field label="Email address">
-                  <Input defaultValue="hello@maisonember.pk" icon="Mail" />
+                  <Input value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} icon="Mail" />
                 </Field>
                 <Field label="Street address" className="sm:col-span-2">
-                  <Input defaultValue="Shop 4, Silk Residences, Block 7, Clifton" icon="MapPin" />
+                  <Input value={profile.address} onChange={(e) => setProfile({ ...profile, address: e.target.value })} icon="MapPin" />
                 </Field>
                 <Field label="City">
-                  <Input defaultValue="Karachi" />
+                  <Input value={profile.city} onChange={(e) => setProfile({ ...profile, city: e.target.value })} />
                 </Field>
                 <Field label="Postal code">
-                  <Input defaultValue="75600" />
+                  <Input value={profile.postal} onChange={(e) => setProfile({ ...profile, postal: e.target.value })} />
                 </Field>
                 <Field label="Short description" className="sm:col-span-2">
-                  <Textarea defaultValue="A woodfire kitchen in Karachi. Live fire cooking, 48-hour dough and dum-cooked biryani." className="min-h-[88px]" />
+                  <Textarea value={profile.desc} onChange={(e) => setProfile({ ...profile, desc: e.target.value })} className="min-h-[88px]" />
                 </Field>
               </div>
 
               <div className="mt-5 flex justify-end gap-2 border-t border-line pt-4">
-                <Button variant="secondary">Discard</Button>
-                <Button icon="Save" onClick={() => save('Profile')}>
+                <Button variant="secondary" onClick={() => setProfile(readPref('settings_profile', DEFAULT_PROFILE))}>Discard</Button>
+                <Button icon="Save" onClick={() => save('settings_profile', profile, 'Profile')}>
                   Save changes
                 </Button>
               </div>
@@ -142,55 +152,48 @@ export default function Settings() {
             <Card>
               <CardHeader
                 title="Branch management"
-                subtitle={`${branches.length} branches in this demo workspace`}
+                subtitle={`${branches.length} live branches from the API`}
                 className="border-b"
-                actions={
-                  <Button size="sm" icon="Plus" onClick={() => push({ title: 'Branch creation is a demo control', tone: 'info' })}>
-                    Add branch
-                  </Button>
-                }
               />
               <div className="divide-y divide-line">
-                {branches.map((b) => (
-                  <div key={b.id} className="flex flex-wrap items-start justify-between gap-4 p-4 sm:p-5">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2.5">
-                        <p className="text-[14px] font-semibold text-ink">{b.name}</p>
-                        <Badge tone="sage" dot>
-                          Active
-                        </Badge>
+                {branches.map((b) => {
+                  const hidden = hiddenBranches.includes(b.restaurant_id)
+                  return (
+                    <div key={b.restaurant_id} className="flex flex-wrap items-start justify-between gap-4 p-4 sm:p-5">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2.5">
+                          <p className="text-[14px] font-semibold text-ink">{b.restaurant_name}</p>
+                          <Badge tone={hidden ? 'neutral' : 'sage'} dot>
+                            {hidden ? 'Hidden' : 'Active'}
+                          </Badge>
+                        </div>
+                        <p className="mt-0.5 font-mono text-[12px] text-ink-muted">{b.restaurant_id} · {b.city}</p>
                       </div>
-                      <p className="mt-0.5 text-[12.5px] text-ink-muted">{b.area}</p>
-                      <div className="mt-2 flex flex-wrap gap-4 text-[12px] text-ink-muted">
-                        <span>Manager: {b.manager}</span>
-                        <span>{b.staff} staff</span>
-                        <span>{b.seats} covers</span>
-                        <span>Opened {b.opened}</span>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          size="sm"
+                          checked={!hidden}
+                          onChange={(v) => {
+                            const next = v ? hiddenBranches.filter((x) => x !== b.restaurant_id) : [...hiddenBranches, b.restaurant_id]
+                            setHiddenBranches(next)
+                            writePref('settings_hidden_branches', next)
+                          }}
+                          label="Visible"
+                        />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        size="sm"
-                        checked
-                        onChange={() => push({ title: `${b.name} visibility toggled (demo)`, tone: 'info' })}
-                        label="Visible"
-                      />
-                      <Button size="xs" variant="secondary" icon="Pencil" onClick={() => push({ title: 'Branch edit is a demo control', tone: 'info' })}>
-                        Edit
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
               <div className="border-t border-line p-4">
-                <DemoNote>Branch changes in this prototype affect the view only.</DemoNote>
+                <LiveNote>Branch list is live API data. Visibility flags are stored in this browser; branches cannot be added or edited here.</LiveNote>
               </div>
             </Card>
           )}
 
           {section === 'hours' && (
             <Card>
-              <CardHeader title="Operating hours" subtitle="Service windows used for reporting and ordering availability" className="border-b" />
+              <CardHeader title="Operating hours" subtitle="Service windows used for reporting reference" className="border-b" />
               <div className="divide-y divide-line">
                 {hours.map((h, i) => (
                   <div key={h.day} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
@@ -226,8 +229,8 @@ export default function Settings() {
                 ))}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line p-4">
-                <p className="text-[12.5px] text-ink-muted">Kitchen closes 30 minutes before the branch on every day.</p>
-                <Button icon="Save" onClick={() => save('Operating hours')}>
+                <p className="text-[12.5px] text-ink-muted">Stored in this browser.</p>
+                <Button icon="Save" onClick={() => save('settings_hours', hours, 'Operating hours')}>
                   Save hours
                 </Button>
               </div>
@@ -237,47 +240,44 @@ export default function Settings() {
           {section === 'menu' && (
             <div className="space-y-5">
               <Card className="p-5">
-                <CardHeader title="Menu preferences" subtitle="Defaults applied across the menu modules" className="-mx-5 -mt-5 mb-4 border-b px-5 py-4" />
+                <CardHeader title="Menu preferences" subtitle="Display defaults for menu modules" className="-mx-5 -mt-5 mb-4 border-b px-5 py-4" />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Preparation buffer" hint="Extra minutes added to every prep time">
+                  <Field label="Preparation buffer" hint="Reference value for prep planning">
                     <Select value={prefs.buffer} onChange={(e) => setPrefs({ ...prefs, buffer: e.target.value })} options={[{ label: '5 minutes', value: '5' }, { label: '10 minutes', value: '10' }, { label: '15 minutes', value: '15' }]} />
-                  </Field>
-                  <Field label="Default currency display">
-                    <Select options={[{ label: 'Rs. 1,250 (PKR symbol after code)', value: 'a' }, { label: 'PKR 1,250', value: 'b' }]} />
                   </Field>
                 </div>
                 <div className="mt-5 divide-y divide-line border-t border-line pt-2">
                   <div className="py-3">
-                    <Switch checked={prefs.calories} onChange={(v) => setPrefs({ ...prefs, calories: v })} label="Show calorie information" desc="Displayed on customer menu cards." />
+                    <Switch checked={prefs.calories} onChange={(v) => setPrefs({ ...prefs, calories: v })} label="Show calorie information" desc="Display preference for menu cards." />
                   </div>
                   <div className="py-3">
-                    <Switch checked={prefs.spice} onChange={(v) => setPrefs({ ...prefs, spice: v })} label="Show spice indicators" desc="Chili icons appear on dishes with heat." />
+                    <Switch checked={prefs.spice} onChange={(v) => setPrefs({ ...prefs, spice: v })} label="Show spice indicators" desc="Chili icons on dishes with heat." />
                   </div>
                   <div className="py-3">
-                    <Switch checked={prefs.allergens} onChange={(v) => setPrefs({ ...prefs, allergens: v })} label="Show allergen warnings" desc="Declared allergens listed on dish pages." />
+                    <Switch checked={prefs.allergens} onChange={(v) => setPrefs({ ...prefs, allergens: v })} label="Show allergen warnings" desc="Declared allergens on dish pages." />
                   </div>
                   <div className="py-3">
-                    <Switch checked={prefs.outOfStock} onChange={(v) => setPrefs({ ...prefs, outOfStock: v })} label="Hide sold-out items automatically" desc="Items unavailable today are removed from the storefront." />
+                    <Switch checked={prefs.outOfStock} onChange={(v) => setPrefs({ ...prefs, outOfStock: v })} label="Hide sold-out items automatically" desc="Unavailable items removed from lists." />
                   </div>
                   <div className="py-3">
                     <Switch checked={prefs.autoHide} onChange={(v) => setPrefs({ ...prefs, autoHide: v })} label="Flag low performers for review" desc="Highlights items classified as Low Performer." />
                   </div>
                 </div>
                 <div className="mt-4 flex justify-end">
-                  <Button icon="Save" onClick={() => save('Menu preferences')}>
+                  <Button icon="Save" onClick={() => save('settings_menu_prefs', prefs, 'Menu preferences')}>
                     Save preferences
                   </Button>
                 </div>
               </Card>
 
               <Card className="p-5">
-                <CardHeader title="Menu sections" subtitle="Order of sections shown to guests" className="-mx-5 -mt-5 mb-4 border-b px-5 py-4" />
+                <CardHeader title="Menu sections" subtitle="Live categories from the catalogue" className="-mx-5 -mt-5 mb-4 border-b px-5 py-4" />
                 <div className="space-y-2">
-                  {['Starters', 'Burgers', 'Pizza', 'Main Course', 'Rice & Bowls', 'Pasta', 'Desserts', 'Beverages'].map((c, i) => (
-                    <div key={c} className="flex items-center gap-3 rounded-xl border border-line px-3.5 py-2.5">
+                  {(meta?.categories ?? []).map((c, i) => (
+                    <div key={c.category_id} className="flex items-center gap-3 rounded-xl border border-line px-3.5 py-2.5">
                       <Icon name="GripVertical" size={15} className="text-ink-faint" />
-                      <span className="flex-1 text-[13.5px] font-medium text-ink">{c}</span>
-                      <span className="text-[11.5px] text-ink-faint">Position {i + 1}</span>
+                      <span className="flex-1 text-[13.5px] font-medium text-ink">{c.category_name}</span>
+                      <span className="font-mono text-[11.5px] text-ink-faint">{c.category_id} · Position {i + 1}</span>
                     </div>
                   ))}
                 </div>
@@ -287,38 +287,32 @@ export default function Settings() {
 
           {section === 'currency' && (
             <Card className="p-5">
-              <CardHeader title="Currency & tax" subtitle="Applied across orders, reports and exports" className="-mx-5 -mt-5 mb-5 border-b px-5 py-4" />
+              <CardHeader title="Currency & tax" subtitle="Display reference for reports and exports" className="-mx-5 -mt-5 mb-5 border-b px-5 py-4" />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Currency" required>
-                  <Select value={tax.currency} onChange={(e) => setTax({ ...tax, currency: e.target.value })} options={[{ label: 'PKR — Pakistani Rupee', value: 'PKR' }, { label: 'USD — US Dollar', value: 'USD' }, { label: 'AED — UAE Dirham', value: 'AED' }]} />
+                  <Select value={tax.currency} onChange={(e) => setTax({ ...tax, currency: e.target.value })} options={[{ label: 'USD — US Dollar', value: 'USD' }, { label: 'PKR — Pakistani Rupee', value: 'PKR' }, { label: 'AED — UAE Dirham', value: 'AED' }]} />
                 </Field>
-                <Field label="Currency symbol">
-                  <Input defaultValue="Rs." />
-                </Field>
-                <Field label="Sales tax rate (%)" hint="Applied at checkout as a demo value">
+                <Field label="Sales tax rate (%)" hint="Reference value used in the preview below">
                   <Input value={tax.rate} onChange={(e) => setTax({ ...tax, rate: e.target.value })} />
                 </Field>
                 <Field label="Service charge (%)">
                   <Input value={tax.service} onChange={(e) => setTax({ ...tax, service: e.target.value })} />
                 </Field>
                 <Field label="Rounding">
-                  <Select value={tax.rounding} onChange={(e) => setTax({ ...tax, rounding: e.target.value })} options={[{ label: 'Nearest rupee', value: 'nearest' }, { label: 'Always round up', value: 'up' }, { label: 'No rounding', value: 'none' }]} />
-                </Field>
-                <Field label="Delivery fee (PKR)">
-                  <Input defaultValue="150" />
+                  <Select value={tax.rounding} onChange={(e) => setTax({ ...tax, rounding: e.target.value })} options={[{ label: 'Nearest unit', value: 'nearest' }, { label: 'Always round up', value: 'up' }, { label: 'No rounding', value: 'none' }]} />
                 </Field>
               </div>
               <div className="mt-5 rounded-xl border border-line bg-canvas p-4">
                 <p className="text-[12.5px] font-semibold text-ink">Preview</p>
                 <p className="mt-1 text-[13px] text-ink-muted">
-                  Subtotal Rs. 2,450 · Tax {tax.rate || 0}% · Service {tax.service || 0}% · Total{' '}
+                  Subtotal 2,450 · Tax {tax.rate || 0}% · Service {tax.service || 0}% · Total{' '}
                   <span className="font-semibold text-ink">
-                    Rs. {Math.round(2450 * (1 + Number(tax.rate || 0) / 100 + Number(tax.service || 0) / 100)).toLocaleString()}
+                    {tax.currency} {Math.round(2450 * (1 + Number(tax.rate || 0) / 100 + Number(tax.service || 0) / 100)).toLocaleString()}
                   </span>
                 </p>
               </div>
               <div className="mt-4 flex justify-end">
-                <Button icon="Save" onClick={() => save('Currency settings')}>
+                <Button icon="Save" onClick={() => save('settings_tax', tax, 'Currency settings')}>
                   Save settings
                 </Button>
               </div>
@@ -327,16 +321,16 @@ export default function Settings() {
 
           {section === 'notifications' && (
             <Card className="p-5">
-              <CardHeader title="Notification preferences" subtitle="Choose which demo alerts appear in the workspace" className="-mx-5 -mt-5 mb-4 border-b px-5 py-4" />
+              <CardHeader title="Notification preferences" subtitle="Which alerts you want to see — stored in this browser" className="-mx-5 -mt-5 mb-4 border-b px-5 py-4" />
               <div className="divide-y divide-line">
                 {[
-                  { k: 'margin' as const, l: 'Margin and profitability alerts', d: 'Contribution margin moves outside the demo range.' },
+                  { k: 'margin' as const, l: 'Margin and profitability alerts', d: 'Contribution margin moves outside range.' },
                   { k: 'wastage' as const, l: 'Wastage alerts', d: 'Prepared quantity exceeds consumption thresholds.' },
-                  { k: 'anomaly' as const, l: 'Sales anomaly alerts', d: 'Unusual spikes, drops or duplicate transactions.' },
+                  { k: 'anomaly' as const, l: 'Sales anomaly alerts', d: 'Unusual spikes, drops or high-value orders.' },
                   { k: 'rating' as const, l: 'Rating changes', d: 'New low ratings or unusual rating patterns.' },
-                  { k: 'promotion' as const, l: 'Promotion performance', d: 'Redemption and margin alerts during active offers.' },
-                  { k: 'forecast' as const, l: 'Forecast updates', d: 'When a new illustrative forecast is available.' },
-                  { k: 'daily' as const, l: 'Daily summary email', d: 'A single digest each morning at 7:00 AM.' },
+                  { k: 'promotion' as const, l: 'Promotion performance', d: 'Redemption and margin alerts during offers.' },
+                  { k: 'forecast' as const, l: 'Forecast updates', d: 'When a new model forecast is available.' },
+                  { k: 'daily' as const, l: 'Daily summary', d: 'A single digest each morning at 7:00 AM.' },
                 ].map((n) => (
                   <div key={n.k} className="py-3">
                     <Switch checked={notif[n.k]} onChange={(v) => setNotif({ ...notif, [n.k]: v })} label={n.l} desc={n.d} />
@@ -344,7 +338,7 @@ export default function Settings() {
                 ))}
               </div>
               <div className="mt-4 flex justify-end border-t border-line pt-4">
-                <Button icon="Save" onClick={() => save('Notification preferences')}>
+                <Button icon="Save" onClick={() => save('settings_notif', notif, 'Notification preferences')}>
                   Save preferences
                 </Button>
               </div>
@@ -354,52 +348,31 @@ export default function Settings() {
           {section === 'users' && (
             <div className="space-y-5">
               <Card>
-                <CardHeader
-                  title="Team members"
-                  subtitle="Demo user list for Maison Ember"
-                  className="border-b"
-                  actions={
-                    <Button size="sm" icon="UserPlus" onClick={() => setInviteOpen(true)}>
-                      Invite member
-                    </Button>
-                  }
-                />
-                <div className="divide-y divide-line">
-                  {TEAM.map((t) => (
-                    <div key={t.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <Avatar name={t.name} size={36} />
-                        <div className="min-w-0">
-                          <p className="truncate text-[13.5px] font-semibold text-ink">{t.name}</p>
-                          <p className="truncate text-[11.5px] text-ink-muted">{t.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-[12.5px] text-ink-muted">{t.locations}</span>
-                        <Badge tone="neutral">{t.role}</Badge>
-                        <Badge tone={t.status === 'Active' ? 'sage' : 'gold'} dot>
-                          {t.status}
-                        </Badge>
-                        <span className="text-[11.5px] text-ink-faint">{t.lastActive}</span>
-                        <Button size="xs" variant="ghost" icon="MoreHorizontal" aria-label="More actions" />
-                      </div>
-                    </div>
-                  ))}
+                <CardHeader title="Your access" subtitle="Signed-in session" className="border-b" />
+                <div className="p-5">
+                  <div className="divide-y divide-line">
+                    <MetricRow label="Username" value={user?.username ?? '—'} />
+                    <MetricRow label="Role" value={user?.role ?? '—'} />
+                    <MetricRow label="Analytics & previews" value={can('viewer') ? 'Allowed' : 'Denied'} />
+                    <MetricRow label="What-if & recommendations" value={can('analyst') ? 'Allowed' : 'Denied'} />
+                    <MetricRow label="Menu, orders & exports" value={can('manager') ? 'Allowed' : 'Denied'} />
+                    <MetricRow label="Administration" value={can('admin') ? 'Allowed' : 'Denied'} />
+                  </div>
                 </div>
               </Card>
 
               <Card>
-                <CardHeader title="Roles & permissions" subtitle="Access levels available in this demo workspace" className="border-b" />
+                <CardHeader title="Roles & permissions" subtitle="Access levels enforced by the API" className="border-b" />
                 <div className="grid gap-3 p-4 md:grid-cols-2">
-                  {ROLES.map((r) => (
+                  {ROLE_MATRIX.map((r) => (
                     <div key={r.role} className="rounded-2xl border border-line p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-[14px] font-semibold text-ink">{r.role}</p>
-                        <Badge tone="neutral">{r.members} member{r.members > 1 ? 's' : ''}</Badge>
+                        {user?.role === r.role.toLowerCase() && <Badge tone="sage">You</Badge>}
                       </div>
                       <p className="mt-1 text-[12.5px] leading-relaxed text-ink-muted">{r.desc}</p>
                       <div className="mt-2.5 flex flex-wrap gap-1.5">
-                        {r.permissions.map((p) => (
+                        {r.perms.map((p) => (
                           <span key={p} className="rounded-md bg-canvas px-2 py-1 text-[11px] font-semibold text-ink-muted">
                             {p}
                           </span>
@@ -409,12 +382,13 @@ export default function Settings() {
                   ))}
                 </div>
               </Card>
+              <LiveNote>User provisioning is handled by the platform admin — accounts cannot be created here.</LiveNote>
             </div>
           )}
 
           {section === 'appearance' && (
             <Card className="p-5">
-              <CardHeader title="Appearance" subtitle="Workspace look and layout preferences" className="-mx-5 -mt-5 mb-5 border-b px-5 py-4" />
+              <CardHeader title="Appearance" subtitle="Workspace look and layout" className="-mx-5 -mt-5 mb-5 border-b px-5 py-4" />
               <div className="space-y-5">
                 <div>
                   <p className="mb-2.5 text-[13px] font-semibold text-ink">Theme</p>
@@ -448,33 +422,8 @@ export default function Settings() {
                   <div className="py-3">
                     <Switch checked={sidebarCollapsed} onChange={() => toggleSidebar()} label="Collapse the sidebar by default" desc="Icons only until you expand it." />
                   </div>
-                  <div className="py-3">
-                    <Switch defaultChecked label="Compact tables" desc="Reduce row height in data tables." />
-                  </div>
-                  <div className="py-3">
-                    <Switch defaultChecked label="Show demo badges" desc="Display “demo value” hints across analytics." />
-                  </div>
                 </div>
-
-                <div>
-                  <p className="mb-2.5 text-[13px] font-semibold text-ink">Accent colour</p>
-                  <div className="flex flex-wrap gap-2">
-                    {['#B54E17', '#96352C', '#5E8C4A', '#2F6FA8', '#C08A16'].map((c) => (
-                      <button
-                        key={c}
-                        aria-label={`Accent ${c}`}
-                        className={cn('focus-ring h-9 w-9 rounded-xl border-2 transition-all', c === '#B54E17' ? 'border-ink' : 'border-transparent')}
-                        style={{ background: c }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-end border-t border-line pt-4">
-                  <Button icon="Save" onClick={() => save('Appearance settings')}>
-                    Save appearance
-                  </Button>
-                </div>
+                <LiveNote>Theme and sidebar apply instantly and are remembered in this browser.</LiveNote>
               </div>
             </Card>
           )}
@@ -482,101 +431,32 @@ export default function Settings() {
           {section === 'security' && (
             <div className="space-y-5">
               <Card className="p-5">
-                <CardHeader title="Password" subtitle="Change the password for this demo account" className="-mx-5 -mt-5 mb-5 border-b px-5 py-4" />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Current password" required>
-                    <Input type="password" placeholder="••••••••" />
-                  </Field>
-                  <div />
-                  <Field label="New password" required hint="At least 10 characters, with a number.">
-                    <Input type="password" placeholder="••••••••" />
-                  </Field>
-                  <Field label="Confirm new password" required>
-                    <Input type="password" placeholder="••••••••" />
-                  </Field>
+                <CardHeader title="Session" subtitle="Your current sign-in" className="-mx-5 -mt-5 mb-5 border-b px-5 py-4" />
+                <div className="divide-y divide-line">
+                  <MetricRow label="Signed in as" value={user?.username ?? '—'} />
+                  <MetricRow label="Role" value={user?.role ?? '—'} />
+                  <MetricRow label="Authentication" value="Token session via the DineIQ API" />
                 </div>
                 <div className="mt-4 flex justify-end">
-                  <Button icon="Save" onClick={() => save('Password')}>
-                    Update password
+                  <Button variant="secondary" icon="LogOut" onClick={logout}>
+                    Sign out
                   </Button>
                 </div>
               </Card>
-
-              <Card className="p-5">
-                <CardHeader title="Account security" subtitle="Visual controls only — no authentication exists in this prototype" className="-mx-5 -mt-5 mb-4 border-b px-5 py-4" />
-                <div className="divide-y divide-line">
-                  <div className="py-3">
-                    <Switch defaultChecked label="Two-factor authentication" desc="Require a code at sign-in." />
-                  </div>
-                  <div className="py-3">
-                    <Switch defaultChecked label="Sign-in alerts" desc="Email me when a new device signs in." />
-                  </div>
-                  <div className="py-3">
-                    <Switch label="Single sign-on (SSO)" desc="Available on the enterprise plan." />
-                  </div>
-                </div>
-              </Card>
-
-              <Card>
-                <CardHeader title="Active sessions" subtitle="Demo device list" className="border-b" />
-                <div className="divide-y divide-line">
-                  {[
-                    { d: 'Chrome · macOS', l: 'Karachi, PK', t: 'This device', c: 'now' },
-                    { d: 'Safari · iPhone', l: 'Karachi, PK', t: 'Active', c: '2 hrs ago' },
-                    { d: 'Chrome · Windows', l: 'Clifton Branch', t: 'Active', c: 'Yesterday' },
-                  ].map((s) => (
-                    <div key={s.d} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
-                      <div>
-                        <p className="text-[13.5px] font-semibold text-ink">{s.d}</p>
-                        <p className="text-[11.5px] text-ink-muted">{s.l}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge tone={s.t === 'This device' ? 'sage' : 'neutral'} dot>
-                          {s.t}
-                        </Badge>
-                        <span className="text-[11.5px] text-ink-faint">{s.c}</span>
-                        {s.t !== 'This device' && (
-                          <Button size="xs" variant="ghost" className="text-clay-600">
-                            Revoke
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
+              <LiveNote>Password changes and device management are handled by the platform admin.</LiveNote>
             </div>
           )}
 
           {section === 'support' && (
             <div className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-3">
-                {[
-                  { t: 'Documentation', d: 'Module guides and metric definitions.', i: 'BookOpen', a: 'Open docs' },
-                  { t: 'Contact support', d: 'Email the DineIQ support team.', i: 'Mail', a: 'Email support' },
-                  { t: 'Book a walkthrough', d: 'A 30-minute guided session.', i: 'CalendarCheck', a: 'Book session' },
-                ].map((s) => (
-                  <Card key={s.t} className="p-5">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ember-50 text-ember-600">
-                      <Icon name={s.i} size={18} />
-                    </span>
-                    <h3 className="mt-3 font-display text-[15.5px] font-semibold text-ink">{s.t}</h3>
-                    <p className="mt-1 text-[12.5px] text-ink-muted">{s.d}</p>
-                    <Button size="sm" variant="secondary" className="mt-3" onClick={() => push({ title: `${s.a} is a demo control`, tone: 'info' })}>
-                      {s.a}
-                    </Button>
-                  </Card>
-                ))}
-              </div>
-
               <Card className="p-5">
-                <CardHeader title="Frequently asked" subtitle="About this prototype" className="-mx-5 -mt-5 mb-4 border-b px-5 py-4" />
+                <CardHeader title="Frequently asked" subtitle="About this system" className="-mx-5 -mt-5 mb-4 border-b px-5 py-4" />
                 <div className="divide-y divide-line">
                   {[
-                    { q: 'Is any of this data real?', a: 'No. Every metric, order, customer and forecast in DineIQ Analytics is a hand-written placeholder for interface demonstration.' },
-                    { q: 'Can I connect my restaurant data?', a: 'Not in this version. The application is a frontend prototype with no backend, database or integrations.' },
-                    { q: 'Why are classifications labelled as demo?', a: 'Because they are static demonstration labels rather than the output of an analytical model.' },
-                    { q: 'Do exports produce files?', a: 'No. Export, print and schedule controls are visual only.' },
+                    { q: 'Is any of this data real?', a: 'Yes. Every dashboard reads from the DineIQ serving database, built by the analytics pipeline from order, menu, customer and wastage records.' },
+                    { q: 'Where do the classifications come from?', a: 'The menu pipeline scores every item on demand, margin, wastage and ratings percentiles. Criteria are shown on the Menu Intelligence page.' },
+                    { q: 'Why do some pages show “no signal” or empty states?', a: 'Because the pipeline only reports measured evidence. Items without a price revision, or days without orders, are shown honestly instead of filled in.' },
+                    { q: 'Do exports produce files?', a: 'Yes. CSV and XLSX exports download the live dataset from the API. Exports require the manager role.' },
                   ].map((f) => (
                     <details key={f.q} className="group py-3">
                       <summary className="flex cursor-pointer items-center justify-between gap-3 text-[13.5px] font-semibold text-ink">
@@ -596,12 +476,12 @@ export default function Settings() {
                   </span>
                   <div>
                     <p className="font-display text-[16px] font-semibold text-ink">DineIQ Analytics</p>
-                    <p className="mt-0.5 text-[13px] text-ink-muted">MenuMatrix Dining Intelligence · Prototype build 1.0.0</p>
+                    <p className="mt-0.5 text-[13px] text-ink-muted">MenuMatrix Dining Intelligence · Live build</p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-3">
                       {[
-                        { l: 'Version', v: '1.0.0' },
-                        { l: 'Build', v: 'prototype' },
-                        { l: 'Data source', v: 'Static demo content' },
+                        { l: 'Data window', v: meta ? `${meta.date_range.dmin.slice(0, 7)} → ${meta.date_range.dmax.slice(0, 7)}` : '—' },
+                        { l: 'Locations', v: `${branches.length}` },
+                        { l: 'Data source', v: 'Live API' },
                       ].map((m) => (
                         <div key={m.l} className="rounded-xl border border-line bg-canvas px-3.5 py-2.5">
                           <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">{m.l}</p>
@@ -616,53 +496,6 @@ export default function Settings() {
           )}
         </div>
       </div>
-
-      <Modal
-        open={inviteOpen}
-        onClose={() => setInviteOpen(false)}
-        title="Invite a team member"
-        subtitle="Demo dialog — no invitation is sent."
-        icon="UserPlus"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setInviteOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              icon="Send"
-              onClick={() => {
-                setInviteOpen(false)
-                push({ title: 'Invitation created (demo)', body: 'No email was sent', tone: 'success' })
-              }}
-            >
-              Send invitation
-            </Button>
-          </>
-        }
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Full name" required>
-            <Input placeholder="Ayesha Kamran" />
-          </Field>
-          <Field label="Email address" required>
-            <Input placeholder="name@maisonember.pk" icon="Mail" />
-          </Field>
-          <Field label="Role" required>
-            <Select options={ROLES.map((r) => ({ label: r.role, value: r.role }))} />
-          </Field>
-          <Field label="Locations">
-            <Select
-              options={[
-                { label: 'All branches', value: 'all' },
-                ...LOCATIONS.map((l) => ({ label: l.name, value: l.id })),
-              ]}
-            />
-          </Field>
-          <Field label="Personal note" className="sm:col-span-2">
-            <Textarea placeholder="Welcome to the team — here is what to look at first…" className="min-h-[80px]" />
-          </Field>
-        </div>
-      </Modal>
     </div>
   )
 }

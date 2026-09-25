@@ -1,34 +1,41 @@
 import React, { useMemo, useState } from 'react'
-import {
-  Badge, Button, Card, CardHeader, Checkbox, Field, Icon, Input, Select, Switch, Tabs, Textarea, cn,
-} from '../../components/ui/primitives'
+import { Badge, Button, Card, CardHeader, Tabs, cn } from '../../components/ui/primitives'
 import { Column, DataTable } from '../../components/ui/table'
-import { Drawer, Modal, useToast } from '../../components/ui/overlay'
+import { Drawer, useToast } from '../../components/ui/overlay'
 import { PageHeader } from '../../components/admin/PageHeader'
 import { BarSeries, ChartCard, TrendChart } from '../../components/charts'
-import { DemoNote, KpiCard, MetricRow, Progress } from '../../components/shared'
-import { PROMOTION_COMPARISON, PROMOTIONS, PROMOTION_TRAPS, type Promotion } from '../../lib/data/analytics'
-import { MENU } from '../../lib/data/menu'
+import { KpiCard, LiveNote, MetricRow } from '../../components/shared'
+import { PageError, PageLoader } from '../../lib/api'
+import { usePromotionsData, type PromoRow } from '../../lib/live'
 import { money, num } from '../../lib/utils'
 
 const STATUS_TONE: Record<string, 'sage' | 'sky' | 'neutral'> = { Active: 'sage', Scheduled: 'sky', Expired: 'neutral' }
 
 export default function Promotions() {
   const { push } = useToast()
-  const [tab, setTab] = useState('Active')
-  const [active, setActive] = useState<Promotion | null>(null)
-  const [createOpen, setCreateOpen] = useState(false)
-  const [form, setForm] = useState({ name: '', code: '', type: 'Percentage', value: '10', start: '', end: '', channel: 'All channels' })
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [tab, setTab] = useState('Expired')
+  const [active, setActive] = useState<PromoRow | null>(null)
+  const [dismissed, setDismissed] = useState<string[]>([])
+  const { data, loading, error, refetch } = usePromotionsData()
 
-  const rows = useMemo(() => PROMOTIONS.filter((p) => p.status === tab), [tab])
+  const rows = useMemo(() => (data?.rows ?? []).filter((p) => p.status === tab), [data, tab])
   const counts = {
-    Active: PROMOTIONS.filter((p) => p.status === 'Active').length,
-    Scheduled: PROMOTIONS.filter((p) => p.status === 'Scheduled').length,
-    Expired: PROMOTIONS.filter((p) => p.status === 'Expired').length,
+    Active: (data?.rows ?? []).filter((p) => p.status === 'Active').length,
+    Scheduled: (data?.rows ?? []).filter((p) => p.status === 'Scheduled').length,
+    Expired: (data?.rows ?? []).filter((p) => p.status === 'Expired').length,
   }
 
-  const columns: Column<Promotion>[] = [
+  if (loading && !data) return <PageLoader />
+  if (error || !data) return <PageError message={error ?? 'No promotion data.'} onRetry={refetch} />
+
+  const copyText = (text: string, title: string) => {
+    void navigator.clipboard.writeText(text).then(
+      () => push({ title, tone: 'success' }),
+      () => push({ title: 'Copy failed', tone: 'error' }),
+    )
+  }
+
+  const columns: Column<PromoRow>[] = [
     {
       key: 'name',
       header: 'Promotion',
@@ -36,18 +43,18 @@ export default function Promotions() {
       render: (p) => (
         <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold text-ink">{p.name}</p>
-          <p className="truncate font-mono text-[11.5px] text-ink-muted">{p.code}</p>
+          <p className="truncate font-mono text-[11.5px] text-ink-muted">{p.id} · {p.discountPct}% off</p>
         </div>
       ),
     },
     {
-      key: 'type',
-      header: 'Type',
+      key: 'scope',
+      header: 'Scope',
       hideBelow: 'lg',
       render: (p) => (
         <div>
-          <p className="text-[12.5px] text-ink-soft">{p.type}</p>
-          <p className="text-[11.5px] font-semibold text-ink-muted">{p.value}</p>
+          <p className="text-[12.5px] text-ink-soft">{p.scope}</p>
+          <p className="font-mono text-[11.5px] font-semibold text-ink-muted">{p.target}</p>
         </div>
       ),
     },
@@ -68,40 +75,43 @@ export default function Promotions() {
       render: (p) => <span className="text-[12.5px] text-ink-muted">{p.channel}</span>,
     },
     {
-      key: 'redemptions',
-      header: 'Redemptions',
+      key: 'orders',
+      header: 'Orders',
       align: 'right',
-      sort: (a, b) => a.redemptions - b.redemptions,
-      render: (p) => <span className="tabular-nums text-ink-soft">{num(p.redemptions)}</span>,
+      sort: (a, b) => a.orders - b.orders,
+      headerTip: 'Orders during the promotion window',
+      render: (p) => <span className="tabular-nums text-ink-soft">{num(p.orders)}</span>,
     },
     {
       key: 'revenue',
       header: 'Revenue',
       align: 'right',
       sort: (a, b) => a.revenue - b.revenue,
-      render: (p) => <span className="font-semibold tabular-nums text-ink">{p.revenue ? money(p.revenue, { compact: true }) : '—'}</span>,
+      render: (p) => <span className="font-semibold tabular-nums text-ink">{money(p.revenue, { compact: true })}</span>,
     },
     {
-      key: 'aov',
-      header: 'AOV',
+      key: 'lift',
+      header: 'Revenue lift',
       align: 'right',
       hideBelow: 'md',
-      sort: (a, b) => a.aov - b.aov,
-      render: (p) => <span className="tabular-nums text-ink-soft">{p.aov ? money(p.aov) : '—'}</span>,
+      sort: (a, b) => a.revenueLift - b.revenueLift,
+      headerTip: 'Revenue change versus the pre-window baseline',
+      render: (p) => (
+        <span className={cn('font-semibold tabular-nums', p.revenueLift >= 0 ? 'text-sage-600' : 'text-clay-600')}>
+          {p.revenueLift >= 0 ? '+' : ''}{(p.revenueLift * 100).toFixed(1)}%
+        </span>
+      ),
     },
     {
       key: 'margin',
       header: 'Margin',
       align: 'right',
-      sort: (a, b) => a.margin - b.margin,
-      render: (p) =>
-        p.margin ? (
-          <span className={cn('rounded-full px-2 py-0.5 text-[11.5px] font-bold', p.margin >= 40 ? 'bg-sage-50 text-sage-700' : p.margin >= 25 ? 'bg-gold-50 text-gold-600' : 'bg-clay-50 text-clay-600')}>
-            {p.margin}%
-          </span>
-        ) : (
-          <span className="text-ink-faint">—</span>
-        ),
+      sort: (a, b) => a.marginPct - b.marginPct,
+      render: (p) => (
+        <span className={cn('rounded-full px-2 py-0.5 text-[11.5px] font-bold tabular-nums', p.marginPct >= 40 ? 'bg-sage-50 text-sage-700' : p.marginPct >= 25 ? 'bg-gold-50 text-gold-600' : 'bg-clay-50 text-clay-600')}>
+          {p.marginPct.toFixed(1)}%
+        </span>
+      ),
     },
     {
       key: 'status',
@@ -123,42 +133,24 @@ export default function Promotions() {
     },
   ]
 
-  const create = () => {
-    const e: Record<string, string> = {}
-    if (!form.name.trim()) e.name = 'Promotion name is required.'
-    if (!form.code.trim()) e.code = 'A promo code is required.'
-    if (!form.start) e.start = 'Start date is required.'
-    if (!form.end) e.end = 'End date is required.'
-    if (form.start && form.end && form.start > form.end) e.end = 'End date must be after the start date.'
-    setErrors(e)
-    if (Object.keys(e).length) {
-      push({ title: 'Please fix the highlighted fields', tone: 'error' })
-      return
-    }
-    setCreateOpen(false)
-    setForm({ name: '', code: '', type: 'Percentage', value: '10', start: '', end: '', channel: 'All channels' })
-    push({ title: 'Promotion created (demo)', body: 'Nothing was scheduled — prototype only', tone: 'success' })
-  }
+  const visibleTraps = data.traps.filter((t) => !dismissed.includes(t.id))
 
   return (
     <div>
       <PageHeader
         eyebrow="MenuMatrix Dining Intelligence"
         title="Promotion Analytics"
-        subtitle="See how offers move revenue, order volume and margin — and where a promotion may be costing more than it earns."
-        demoNote="All promotion performance figures are static demonstration values. No analytics are computed here."
-        actions={
-          <Button icon="Plus" onClick={() => { setCreateOpen(true); setErrors({}) }}>
-            Create promotion
-          </Button>
-        }
+        subtitle="Live window-vs-baseline reads on every offer — and where a promotion cost more than it earned."
+        demoNote="Live effectiveness analysis. Promotion windows are historical — nothing here is currently running."
+        onRefresh={refetch}
+        dataset="promotions"
       />
 
       <div className="mb-5 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Active promotions" value={`${counts.Active}`} compare="running now" icon="BadgePercent" tone="sage" />
-        <KpiCard label="Scheduled" value={`${counts.Scheduled}`} compare="upcoming" icon="CalendarClock" tone="sky" />
-        <KpiCard label="Total redemptions" value="2,090" compare="demo period" icon="Ticket" tone="ember" />
-        <KpiCard label="Promotion traps detected" value={`${PROMOTION_TRAPS.length}`} compare="illustrative examples" icon="AlertTriangle" tone="clay" />
+        <KpiCard label="Promotions analysed" value={num(data.rows.length)} compare="historical windows" icon="BadgePercent" tone="sage" />
+        <KpiCard label="Successful" value={num(data.successful)} compare="met the success bar" icon="CheckCircle" tone="sky" />
+        <KpiCard label="Avg revenue lift" value={`${data.avgLift >= 0 ? '+' : ''}${(data.avgLift * 100).toFixed(1)}%`} compare="vs baselines" icon="TrendingUp" tone="ember" />
+        <KpiCard label="Promotion traps detected" value={num(data.traps.length)} compare="live detection" icon="AlertTriangle" tone="clay" />
       </div>
 
       <Card className="mb-5">
@@ -181,12 +173,7 @@ export default function Promotions() {
           onRowClick={(p) => setActive(p)}
           initialSort={{ key: 'revenue', dir: 'desc' }}
           emptyTitle={`No ${tab.toLowerCase()} promotions`}
-          emptyMessage="Promotions you create will appear here in this demo workspace."
-          emptyAction={
-            <Button size="sm" icon="Plus" onClick={() => { setCreateOpen(true); setErrors({}) }}>
-              Create promotion
-            </Button>
-          }
+          emptyMessage={tab === 'Expired' ? 'No expired windows on record.' : 'All recorded windows have ended — nothing is running or scheduled.'}
         />
       </Card>
 
@@ -194,50 +181,59 @@ export default function Promotions() {
       <Card className="mb-5 overflow-hidden">
         <CardHeader
           title="Promotion Trap Detection"
-          subtitle="Illustrative scenarios where an offer grew activity but weakened the result"
+          subtitle="Live scenarios where an offer weakened the result"
           icon="AlertTriangle"
           className="border-b"
-          actions={<Badge tone="clay">5 examples</Badge>}
+          actions={<Badge tone="clay">{data.traps.length} detected</Badge>}
         />
-        <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
-          {PROMOTION_TRAPS.map((t) => (
-            <div
-              key={t.id}
-              className={cn(
-                'rounded-2xl border p-4',
-                t.severity === 'High' ? 'border-clay-200 bg-clay-50/50' : t.severity === 'Medium' ? 'border-gold-200 bg-gold-50/40' : 'border-sky-100 bg-sky-50/40',
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <Badge tone={t.severity === 'High' ? 'clay' : t.severity === 'Medium' ? 'gold' : 'sky'}>{t.severity}</Badge>
-                <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-bold tabular-nums text-ink-soft">{t.metric}</span>
-              </div>
-              <h4 className="mt-2.5 text-[13.5px] font-semibold leading-snug text-ink">{t.title}</h4>
-              <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-muted">{t.body}</p>
-              <div className="mt-3 flex gap-2">
-                <Button size="xs" variant="secondary" onClick={() => push({ title: 'Review task created (demo)', tone: 'success' })}>
-                  Review
-                </Button>
-                <Button size="xs" variant="ghost" onClick={() => push({ title: 'Scenario dismissed', tone: 'info' })}>
-                  Dismiss
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        {visibleTraps.length === 0 ? (
+          <p className="p-5 text-[13px] text-ink-muted">No traps in view — all detected scenarios were dismissed, or none were found.</p>
+        ) : (
+          <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+            {visibleTraps.map((t) => {
+              const severe = t.marginLift < -0.15
+              return (
+                <div
+                  key={t.id}
+                  className={cn(
+                    'rounded-2xl border p-4',
+                    severe ? 'border-clay-200 bg-clay-50/50' : 'border-gold-200 bg-gold-50/40',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <Badge tone={severe ? 'clay' : 'gold'}>{t.trap}</Badge>
+                    <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-bold tabular-nums text-ink-soft">
+                      {(t.marginLift * 100).toFixed(1)}% margin
+                    </span>
+                  </div>
+                  <h4 className="mt-2.5 text-[13.5px] font-semibold leading-snug text-ink">{t.name}</h4>
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-muted">
+                    Revenue moved {(t.revenueLift * 100).toFixed(1)}% versus baseline while margin moved {(t.marginLift * 100).toFixed(1)}% —{' '}
+                    {money(t.revenue, { compact: true })} revenue at {t.marginPct.toFixed(1)}% margin across {num(t.orders)} orders.
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <Button size="xs" variant="secondary" onClick={() => setActive(t)}>
+                      View detail
+                    </Button>
+                    <Button size="xs" variant="ghost" onClick={() => setDismissed((d) => [...d, t.id])}>
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
         <div className="border-t border-line p-4">
-          <DemoNote>
-            These trap scenarios are hand-written examples for interface demonstration. No detection logic is executed in
-            this prototype.
-          </DemoNote>
+          <LiveNote>Traps are flagged live by the effectiveness pipeline when margin deteriorates in the window.</LiveNote>
         </div>
       </Card>
 
       {/* Comparison */}
       <div className="mb-5 grid gap-4 xl:grid-cols-[1.3fr_1fr]">
-        <ChartCard title="Promotion performance comparison" subtitle="Revenue and orders per demo promotion" height={300}>
+        <ChartCard title="Promotion performance comparison" subtitle="Window revenue and orders per promotion — live" height={300}>
           <TrendChart
-            data={PROMOTION_COMPARISON}
+            data={data.comparison}
             xKey="name"
             series={[
               { key: 'revenue', label: 'Revenue', color: '#B54E17', type: 'bar' },
@@ -247,9 +243,9 @@ export default function Promotions() {
           />
         </ChartCard>
 
-        <ChartCard title="Contribution margin by promotion" subtitle="Margin retained during each demo offer" height={300}>
+        <ChartCard title="Contribution margin by promotion" subtitle="Margin retained during each offer — live" height={300}>
           <BarSeries
-            data={PROMOTION_COMPARISON}
+            data={data.comparison}
             xKey="name"
             layout="vertical"
             bars={[{ key: 'margin', label: 'Margin %', color: '#5E8C4A' }]}
@@ -259,99 +255,23 @@ export default function Promotions() {
         </ChartCard>
       </div>
 
-      {/* Create modal */}
-      <Modal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        title="Create promotion"
-        subtitle="Demo form — nothing is scheduled or published."
-        icon="BadgePercent"
-        size="lg"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button icon="Save" onClick={create}>
-              Create promotion
-            </Button>
-          </>
-        }
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Promotion name" required error={errors.name} className="sm:col-span-2">
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} invalid={!!errors.name} placeholder="e.g. Weekend Pizza Night" />
-          </Field>
-          <Field label="Promo code" required error={errors.code}>
-            <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} invalid={!!errors.code} placeholder="PIZZA20" className="font-mono uppercase" />
-          </Field>
-          <Field label="Discount type" required>
-            <Select
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
-              options={[
-                { label: 'Percentage', value: 'Percentage' },
-                { label: 'Fixed amount', value: 'Fixed amount' },
-                { label: 'Buy one get one', value: 'Buy one get one' },
-                { label: 'Bundle', value: 'Bundle' },
-              ]}
-            />
-          </Field>
-          <Field label="Discount value" required>
-            <Input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder="20" />
-          </Field>
-          <Field label="Channel">
-            <Select
-              value={form.channel}
-              onChange={(e) => setForm({ ...form, channel: e.target.value })}
-              options={[
-                { label: 'All channels', value: 'All channels' },
-                { label: 'Dine-in', value: 'Dine-in' },
-                { label: 'Website', value: 'Website' },
-                { label: 'Delivery platform', value: 'Delivery platform' },
-              ]}
-            />
-          </Field>
-          <Field label="Start date" required error={errors.start}>
-            <Input type="date" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} invalid={!!errors.start} />
-          </Field>
-          <Field label="End date" required error={errors.end}>
-            <Input type="date" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} invalid={!!errors.end} />
-          </Field>
-          <Field label="Eligible menu items" className="sm:col-span-2">
-            <Select options={[{ label: 'All menu items', value: 'all' }, ...MENU.slice(0, 10).map((m) => ({ label: m.name, value: m.id }))]} />
-          </Field>
-          <Field label="Eligible locations" className="sm:col-span-2">
-            <div className="grid gap-2 sm:grid-cols-3">
-              {['Clifton Branch', 'Downtown Branch', 'Gulshan Branch'].map((l) => (
-                <Checkbox key={l} label={l} defaultChecked />
-              ))}
-            </div>
-          </Field>
-          <div className="sm:col-span-2">
-            <Switch label="Notify the branch teams when this promotion goes live" defaultChecked desc="Demo preference — no notification is sent." />
-          </div>
-        </div>
-      </Modal>
-
       {/* Drawer */}
       <Drawer
         open={!!active}
         onClose={() => setActive(null)}
         title={active?.name ?? ''}
-        subtitle={active ? `${active.type} · ${active.value} · ${active.code}` : ''}
+        subtitle={active ? `${active.scope} · ${active.discountPct}% off · ${active.id}` : ''}
         width="lg"
         badge={active ? <Badge tone={STATUS_TONE[active.status] ?? 'neutral'} dot>{active.status}</Badge> : undefined}
         footer={
           active && (
-            <>
-              <Button variant="secondary" icon="PauseCircle" onClick={() => push({ title: 'Promotion paused (demo)', tone: 'info' })}>
-                Pause
-              </Button>
-              <Button icon="Pencil" onClick={() => push({ title: 'Promotion updated (demo)', tone: 'success' })}>
-                Edit promotion
-              </Button>
-            </>
+            <Button
+              variant="secondary"
+              icon="Copy"
+              onClick={() => copyText(`${active.name} (${active.id}): ${num(active.orders)} orders, ${money(active.revenue)} revenue (${(active.revenueLift * 100).toFixed(1)}% lift), margin ${active.marginPct.toFixed(1)}% (${(active.marginLift * 100).toFixed(1)}% lift). Successful: ${active.successful ? 'yes' : 'no'}.`, 'Promotion summary copied')}
+            >
+              Copy summary
+            </Button>
           )
         }
       >
@@ -359,10 +279,10 @@ export default function Promotions() {
           <div className="space-y-4 p-5">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { l: 'Redemptions', v: num(active.redemptions) },
-                { l: 'Revenue', v: active.revenue ? money(active.revenue, { compact: true }) : '—' },
                 { l: 'Orders', v: num(active.orders) },
-                { l: 'Avg order value', v: active.aov ? money(active.aov) : '—' },
+                { l: 'Revenue', v: money(active.revenue, { compact: true }) },
+                { l: 'Buyers', v: num(active.buyers) },
+                { l: 'Avg order value', v: money(active.aov) },
               ].map((s) => (
                 <div key={s.l} className="rounded-xl border border-line bg-white p-3.5">
                   <p className="text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">{s.l}</p>
@@ -376,81 +296,59 @@ export default function Promotions() {
               <div className="mt-1 divide-y divide-line">
                 <MetricRow label="Duration" value={`${active.start} – ${active.end}`} />
                 <MetricRow label="Channel" value={active.channel} />
-                <MetricRow label="Contribution margin" value={active.margin ? `${active.margin}%` : '—'} />
-                <MetricRow label="New customers acquired" value={active.newCustomers ? num(active.newCustomers) : '—'} />
-                <MetricRow label="Repeat purchase rate" value={active.repeatRate ? `${active.repeatRate}%` : '—'} />
-                <MetricRow label="Wastage during promotion" value={active.wastage ? `${active.wastage}%` : '—'} tone={active.wastage > 8 ? 'text-clay-600' : undefined} />
+                <MetricRow label="Scope" value={`${active.scope} (${active.target})`} />
+                <MetricRow label="Contribution margin" value={`${active.marginPct.toFixed(1)}% (${money(active.margin, { compact: true })})`} />
+                <MetricRow label="New buyers acquired" value={num(active.newBuyers)} />
+                <MetricRow label="Repeaters (30d)" value={num(active.repeaters)} />
+                <MetricRow
+                  label="Wastage cost in window"
+                  value={`${money(active.winWaste, { compact: true })} (baseline ${money(active.baseWaste, { compact: true })})`}
+                  tone={active.winWaste > active.baseWaste ? 'text-clay-600' : undefined}
+                />
+                <MetricRow label="Pipeline verdict" value={active.successful ? 'Successful' : 'Not successful'} tone={active.successful ? 'text-sage-600' : 'text-clay-600'} />
               </div>
             </Card>
-
-            {active.revenue > 0 && (
-              <Card className="p-4">
-                <p className="text-[13px] font-semibold text-ink">Versus baseline — demo comparison</p>
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <div className="flex justify-between text-[12px] text-ink-muted">
-                      <span>Baseline revenue {money(active.baselineRevenue, { compact: true })}</span>
-                      <span>Promotion revenue {money(active.revenue, { compact: true })}</span>
-                    </div>
-                    <div className="mt-1.5 flex gap-1.5">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
-                        <div className="h-full rounded-full bg-ink-faint" style={{ width: `${(active.baselineRevenue / 500000) * 100}%` }} />
-                      </div>
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
-                        <div className="h-full rounded-full bg-ember-500" style={{ width: `${(active.revenue / 500000) * 100}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[12px] text-ink-muted">
-                      <span>Baseline margin {active.baselineMargin}%</span>
-                      <span>Promotion margin {active.margin}%</span>
-                    </div>
-                    <div className="mt-1.5 flex gap-1.5">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
-                        <div className="h-full rounded-full bg-ink-faint" style={{ width: `${active.baselineMargin}%` }} />
-                      </div>
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
-                        <div className={cn('h-full rounded-full', active.margin < active.baselineMargin ? 'bg-clay-500' : 'bg-sage-500')} style={{ width: `${active.margin}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {active.margin < active.baselineMargin && (
-                  <p className="mt-3 rounded-xl border border-clay-100 bg-clay-50 px-3 py-2.5 text-[12px] leading-relaxed text-clay-600">
-                    Illustrative trap: revenue grew while contribution margin declined versus the demo baseline.
-                  </p>
-                )}
-              </Card>
-            )}
 
             <Card className="p-4">
-              <p className="text-[13px] font-semibold text-ink">Eligibility</p>
-              <div className="mt-2.5 space-y-3">
+              <p className="text-[13px] font-semibold text-ink">Versus baseline — live comparison</p>
+              <div className="mt-3 space-y-3">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">Menu items</p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {active.items.map((i) => (
-                      <Badge key={i} tone="neutral">
-                        {i}
-                      </Badge>
-                    ))}
+                  <div className="flex justify-between text-[12px] text-ink-muted">
+                    <span>Baseline revenue {money(active.baseRevenue, { compact: true })}</span>
+                    <span>Promotion revenue {money(active.revenue, { compact: true })}</span>
+                  </div>
+                  <div className="mt-1.5 flex gap-1.5">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
+                      <div className="h-full rounded-full bg-ink-faint" style={{ width: `${Math.min(100, (active.baseRevenue / Math.max(1, active.baseRevenue, active.revenue)) * 100)}%` }} />
+                    </div>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
+                      <div className="h-full rounded-full bg-ember-500" style={{ width: `${Math.min(100, (active.revenue / Math.max(1, active.baseRevenue, active.revenue)) * 100)}%` }} />
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">Locations</p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {active.locations.map((l) => (
-                      <Badge key={l} tone="ember">
-                        {l}
-                      </Badge>
-                    ))}
+                  <div className="flex justify-between text-[12px] text-ink-muted">
+                    <span>Baseline margin {active.baseMarginPct.toFixed(1)}%</span>
+                    <span>Promotion margin {active.marginPct.toFixed(1)}%</span>
+                  </div>
+                  <div className="mt-1.5 flex gap-1.5">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
+                      <div className="h-full rounded-full bg-ink-faint" style={{ width: `${Math.min(100, active.baseMarginPct)}%` }} />
+                    </div>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
+                      <div className={cn('h-full rounded-full', active.marginPct < active.baseMarginPct ? 'bg-clay-500' : 'bg-sage-500')} style={{ width: `${Math.min(100, active.marginPct)}%` }} />
+                    </div>
                   </div>
                 </div>
               </div>
+              {active.trap && (
+                <p className="mt-3 rounded-xl border border-clay-100 bg-clay-50 px-3 py-2.5 text-[12px] leading-relaxed text-clay-600">
+                  Live trap flag: {active.trap} — revenue moved {(active.revenueLift * 100).toFixed(1)}% while margin moved {(active.marginLift * 100).toFixed(1)}% versus baseline.
+                </p>
+              )}
             </Card>
 
-            <DemoNote>Demo promotion record. No promotion is published or scheduled by this prototype.</DemoNote>
+            <LiveNote>Live window-vs-baseline analysis. Promotions cannot be created or edited from this dataset.</LiveNote>
           </div>
         )}
       </Drawer>

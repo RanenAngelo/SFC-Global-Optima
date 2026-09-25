@@ -1436,3 +1436,125 @@ export function usePricingData() {
 
   return { data: shaped, loading, error, refetch }
 }
+
+/* ───────────────────────────── Promotions ───────────────────────────── */
+
+export type PromoRow = {
+  id: string
+  name: string
+  scope: string
+  target: string
+  discountPct: number
+  start: string
+  end: string
+  channel: string
+  status: 'Active' | 'Scheduled' | 'Expired'
+  orders: number
+  revenue: number
+  margin: number
+  marginPct: number
+  aov: number
+  buyers: number
+  baseOrders: number
+  baseRevenue: number
+  baseMargin: number
+  baseMarginPct: number
+  newBuyers: number
+  repeaters: number
+  winWaste: number
+  baseWaste: number
+  revenueLift: number
+  marginLift: number
+  successful: boolean
+  trap: string | null
+}
+
+const TRAP_LABEL: Record<string, string> = { margin_erosion: 'Margin erosion' }
+
+export function usePromotionsData() {
+  const promos = useApi<{
+    promotions: { promotion_id: string; promotion_name: string; scope: string; target_id: string; discount_pct: number; start_date: string; end_date: string; channel: string }[]
+    effectiveness: {
+      promotion_id: string
+      win_orders: number
+      win_revenue: number
+      win_margin: number
+      win_buyers: number
+      base_orders: number
+      base_revenue: number
+      base_margin: number
+      win_aov: number
+      win_wastage_cost: number
+      base_wastage_cost: number
+      new_buyers: number
+      repeaters_30d: number
+      revenue_lift: number
+      margin_lift: number
+      successful: number
+    }[]
+    traps: { promotion_id: string; promotion_name: string; trap: string }[]
+  }>('/promotions')
+  const { options: meta } = useMeta()
+
+  const loading = promos.loading
+  const error = promos.error
+  const refetch = () => promos.refetch()
+
+  const shaped = useMemo(() => {
+    if (!promos.data) return null
+    const dataMax = (meta?.date_range?.dmax as string | undefined)?.slice(0, 10) ?? '9999-12-31'
+    const effOf: Record<string, (typeof promos.data.effectiveness)[number]> = {}
+    for (const e of promos.data.effectiveness) effOf[e.promotion_id] = e
+    const trapOf: Record<string, string> = {}
+    for (const t of promos.data.traps) trapOf[t.promotion_id] = TRAP_LABEL[t.trap] ?? t.trap
+
+    const rows: PromoRow[] = promos.data.promotions.map((p) => {
+      const e = effOf[p.promotion_id]
+      const s = p.start_date.slice(0, 10)
+      const en = p.end_date.slice(0, 10)
+      const status: PromoRow['status'] = s > dataMax ? 'Scheduled' : en < dataMax ? 'Expired' : 'Active'
+      const marginPct = e && e.win_revenue ? (e.win_margin / e.win_revenue) * 100 : 0
+      const baseMarginPct = e && e.base_revenue ? (e.base_margin / e.base_revenue) * 100 : 0
+      return {
+        id: p.promotion_id,
+        name: p.promotion_name,
+        scope: p.scope,
+        target: p.target_id,
+        discountPct: Math.round(p.discount_pct * 1000) / 10,
+        start: fmtDate(s),
+        end: fmtDate(en),
+        channel: p.channel,
+        status,
+        orders: e?.win_orders ?? 0,
+        revenue: Math.round((e?.win_revenue ?? 0) * 100) / 100,
+        margin: Math.round((e?.win_margin ?? 0) * 100) / 100,
+        marginPct: Math.round(marginPct * 10) / 10,
+        aov: Math.round((e?.win_aov ?? 0) * 100) / 100,
+        buyers: e?.win_buyers ?? 0,
+        baseOrders: e?.base_orders ?? 0,
+        baseRevenue: Math.round((e?.base_revenue ?? 0) * 100) / 100,
+        baseMargin: Math.round((e?.base_margin ?? 0) * 100) / 100,
+        baseMarginPct: Math.round(baseMarginPct * 10) / 10,
+        newBuyers: e?.new_buyers ?? 0,
+        repeaters: e?.repeaters_30d ?? 0,
+        winWaste: Math.round((e?.win_wastage_cost ?? 0) * 100) / 100,
+        baseWaste: Math.round((e?.base_wastage_cost ?? 0) * 100) / 100,
+        revenueLift: e?.revenue_lift ?? 0,
+        marginLift: e?.margin_lift ?? 0,
+        successful: (e?.successful ?? 0) === 1,
+        trap: trapOf[p.promotion_id] ?? null,
+      }
+    })
+
+    const successful = rows.filter((r) => r.successful).length
+    const avgLift = rows.length ? rows.reduce((t, r) => t + r.revenueLift, 0) / rows.length : 0
+    const comparison = [...rows]
+      .sort((x, y) => y.revenue - x.revenue)
+      .map((r) => ({ name: r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name, revenue: r.revenue, orders: r.orders, margin: r.marginPct }))
+    const traps = rows.filter((r) => r.trap)
+
+    return { rows, successful, avgLift, comparison, traps }
+  }, [promos.data, meta])
+
+  return { data: shaped, loading, error, refetch }
+}

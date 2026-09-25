@@ -1844,3 +1844,80 @@ export function useLocationDetail(restaurantId: string | null) {
 
   return { data: shaped, loading, error, refetch }
 }
+
+/* ───────────────────────────── Recommendations ───────────────────────────── */
+
+export type RecItem = {
+  id: string
+  type: string
+  category: string
+  tone: string
+  title: string
+  entity: string
+  action: string
+  evidence: string[]
+  source: string
+  priority: string
+  impact: number
+  state: string
+}
+
+const REC_TYPE_META: Record<string, { label: string; tone: string; route: string; routeLabel: string }> = {
+  wastage_reduction: { label: 'Wastage', tone: '#96352C', route: '/admin/inventory', routeLabel: 'Inventory' },
+  menu_promotion: { label: 'Menu', tone: '#B54E17', route: '/admin/menu-intelligence', routeLabel: 'Menu intelligence' },
+  pricing: { label: 'Pricing', tone: '#2F6FA8', route: '/admin/pricing', routeLabel: 'Pricing' },
+  bundling: { label: 'Bundles', tone: '#C08A16', route: '/admin/market-basket', routeLabel: 'Market basket' },
+  inventory: { label: 'Inventory', tone: '#5E8C4A', route: '/admin/inventory', routeLabel: 'Inventory' },
+  promotion_review: { label: 'Promotions', tone: '#7C5CBF', route: '/admin/promotions', routeLabel: 'Promotions' },
+  location_investigation: { label: 'Locations', tone: '#B54E17', route: '/admin/locations', routeLabel: 'Locations' },
+  customer_targeting: { label: 'Customers', tone: '#4A7139', route: '/admin/customers', routeLabel: 'Customers' },
+}
+
+export function recTypeMeta(type: string) {
+  return REC_TYPE_META[type] ?? { label: type, tone: '#726B62', route: '/admin/menu-intelligence', routeLabel: 'Menu intelligence' }
+}
+
+export function useRecommendationsData() {
+  const q = useApi<
+    {
+      id: string
+      type: string
+      title: string
+      entity: string
+      action: string
+      evidence: string[] | string
+      source: string
+      priority: string
+      impact_rs: number | null
+      state: string
+    }[]
+  >('/recommendations')
+
+  const shaped = useMemo(() => {
+    if (!q.data) return null
+    const items: RecItem[] = q.data.map((r) => {
+      const meta = recTypeMeta(r.type)
+      return {
+        id: r.id,
+        type: r.type,
+        category: meta.label,
+        tone: meta.tone,
+        title: r.title,
+        entity: r.entity,
+        action: r.action,
+        evidence: Array.isArray(r.evidence) ? r.evidence : [String(r.evidence)],
+        source: r.source,
+        priority: r.priority,
+        impact: r.impact_rs ?? 0,
+        state: r.state ?? 'new',
+      }
+    })
+    return {
+      items,
+      categories: ['All', ...Array.from(new Set(items.map((r) => r.category)))],
+      sources: Array.from(new Set(items.map((r) => r.source))),
+    }
+  }, [q.data])
+
+  return { data: shaped, loading: q.loading, error: q.error, refetch: q.refetch }
+}

@@ -1151,3 +1151,61 @@ export function useBasketData() {
 
   return { data: shaped, loading, error, refetch }
 }
+
+/* ───────────────────────────── Forecasting ───────────────────────────── */
+
+export type ForecastPoint = { date: string; units: number }
+
+export function useForecastData(grain: 'item' | 'restaurant', entityId: string | null) {
+  const fc = useApi<{
+    forecasts: { date: string; forecast_units: number; method: string; history_rows: number }[]
+    model_metrics: { task: string; metrics: string }[]
+  }>('/forecast', { params: { grain, entity_id: entityId ?? '' }, enabled: !!entityId })
+  const hist = useApi<{ history: { entity: string; d: string; units: number }[] }>('/forecast/history', {
+    params: { grain, entity_id: entityId ?? '' },
+    enabled: !!entityId,
+  })
+  const items = useApi<{ item_id: string; item_name: string; category_name: string }[]>('/menu/items')
+
+  const loading = fc.loading || hist.loading || items.loading
+  const error = fc.error ?? hist.error ?? items.error
+  const refetch = () => {
+    fc.refetch()
+    hist.refetch()
+    items.refetch()
+  }
+
+  const shaped = useMemo(() => {
+    if (!fc.data || !hist.data) return null
+    const forecasts: ForecastPoint[] = fc.data.forecasts.map((f) => ({
+      date: f.date.slice(0, 10),
+      units: Math.round(f.forecast_units * 100) / 100,
+    }))
+    const history: ForecastPoint[] = hist.data.history.map((h) => ({ date: h.d.slice(0, 10), units: h.units }))
+    const runs = (fc.data.model_metrics ?? []).map((m, i) => {
+      let parsed: Record<string, number> = {}
+      try {
+        parsed = JSON.parse(m.metrics) as Record<string, number>
+      } catch {
+        parsed = {}
+      }
+      return {
+        run: i + 1,
+        rmse: parsed.rmse as number | undefined,
+        mae: parsed.mae as number | undefined,
+        mape: parsed.mape as number | undefined,
+        r2: parsed.r2 as number | undefined,
+      }
+    })
+    return {
+      forecasts,
+      history,
+      runs,
+      method: fc.data.forecasts[0]?.method ?? '—',
+      historyRows: fc.data.forecasts[0]?.history_rows ?? history.length,
+      items: items.data ?? [],
+    }
+  }, [fc.data, hist.data, items.data])
+
+  return { data: shaped, loading, error, refetch }
+}

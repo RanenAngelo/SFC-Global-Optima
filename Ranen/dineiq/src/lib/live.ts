@@ -1681,3 +1681,166 @@ export function useRatingsData() {
 
   return { data: shaped, loading, error, refetch }
 }
+
+/* ───────────────────────────── Locations ───────────────────────────── */
+
+export type BranchRow = {
+  id: string
+  name: string
+  city: string
+  revenue: number
+  profit: number
+  margin: number
+  orders: number
+  customers: number
+  promoShare: number
+  aov: number
+  repeat: number
+  wastedQty: number
+  rating: number
+  driverShare: number
+}
+
+export function useLocationsData() {
+  const raw = useApi<
+    {
+      restaurant_id: string
+      restaurant_name: string
+      city: string
+      revenue: number
+      profit: number
+      orders: number
+      customers: number
+      promo_share: number
+      aov: number
+      repeat_rate: number
+      wasted_qty: number
+      avg_rating: number
+      profit_driver_revenue_share: number
+    }[]
+  >('/locations')
+
+  const shaped = useMemo(() => {
+    if (!raw.data) return null
+    const rows: BranchRow[] = raw.data.map((l) => ({
+      id: l.restaurant_id,
+      name: l.restaurant_name,
+      city: l.city,
+      revenue: Math.round(l.revenue * 100) / 100,
+      profit: Math.round(l.profit * 100) / 100,
+      margin: l.revenue ? Math.round((l.profit / l.revenue) * 1000) / 10 : 0,
+      orders: l.orders,
+      customers: l.customers,
+      promoShare: Math.round(l.promo_share * 1000) / 10,
+      aov: Math.round(l.aov * 100) / 100,
+      repeat: Math.round(l.repeat_rate * 1000) / 10,
+      wastedQty: Math.round(l.wasted_qty * 10) / 10,
+      rating: Math.round(l.avg_rating * 100) / 100,
+      driverShare: Math.round(l.profit_driver_revenue_share * 1000) / 10,
+    }))
+    const short = (n: string) => {
+      const m = n.match(/Branch\s*(\d+)/)
+      return m ? `#${m[1]} ${rows.find((r) => r.name === n)?.city ?? ''}` : n
+    }
+    return {
+      rows,
+      revenueBars: [...rows].sort((a, b) => b.revenue - a.revenue).map((l) => ({ location: short(l.name), revenue: l.revenue })),
+      wasteBars: [...rows].sort((a, b) => b.wastedQty - a.wastedQty).map((l) => ({ location: short(l.name), waste: l.wastedQty })),
+      driverBars: [...rows].sort((a, b) => b.driverShare - a.driverShare).map((l) => ({ location: short(l.name), share: l.driverShare })),
+      satRows: rows.map((l) => ({ location: short(l.name), rating: l.rating, repeat: l.repeat / 10 })),
+      maxWaste: Math.max(1, ...rows.map((l) => l.wastedQty)),
+    }
+  }, [raw.data])
+
+  return { data: shaped, loading: raw.loading, error: raw.error, refetch: raw.refetch }
+}
+
+export function useLocationDetail(restaurantId: string | null) {
+  const detail = useApi<{
+    location: {
+      restaurant_id: string
+      restaurant_name: string
+      city: string
+      revenue: number
+      profit: number
+      orders: number
+      customers: number
+      promo_share: number
+      aov: number
+      repeat_rate: number
+      wasted_qty: number
+      avg_rating: number
+      profit_driver_revenue_share: number
+    }
+    trend: { d: string; revenue: number }[]
+    menu: {
+      item_id: string
+      item_name: string
+      units_sold: number
+      revenue: number
+      contribution_margin: number
+      location_class: string
+      performance_class: string
+      differs_from_global: number
+    }[]
+  }>(restaurantId ? `/locations/${restaurantId}` : null, { enabled: !!restaurantId })
+  const over = useApi<OverviewOut>('/dashboard/overview', {
+    params: restaurantId ? { location: restaurantId } : {},
+    enabled: !!restaurantId,
+  })
+  const inv = useApi<{ by_location: { restaurant_id: string; city: string; qty: number; cost: number }[] }>('/inventory')
+
+  const loading = detail.loading || over.loading || inv.loading
+  const error = detail.error ?? over.error ?? inv.error
+  const refetch = () => {
+    detail.refetch()
+    over.refetch()
+    inv.refetch()
+  }
+
+  const shaped = useMemo(() => {
+    if (!detail.data) return null
+    const l = detail.data.location
+    const byMonth: Record<string, number> = {}
+    for (const t of detail.data.trend) {
+      const m = t.d.slice(0, 7)
+      byMonth[m] = (byMonth[m] ?? 0) + t.revenue
+    }
+    const trendMonthly = Object.entries(byMonth)
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([month, revenue]) => ({ month, revenue: Math.round(revenue * 100) / 100 }))
+    const classes: Record<string, number> = { 'Profit Driver': 0, 'Volume Driver': 0, 'Hidden Opportunity': 0, 'Low Performer': 0 }
+    for (const m of detail.data.menu) {
+      if (m.location_class in classes) classes[m.location_class] += 1
+    }
+    const branchWaste = inv.data?.by_location.find((x) => x.restaurant_id === l.restaurant_id)
+    const networkWaste = (inv.data?.by_location ?? []).reduce((s, x) => s + x.cost, 0)
+    return {
+      location: {
+        id: l.restaurant_id,
+        name: l.restaurant_name,
+        city: l.city,
+        revenue: l.revenue,
+        profit: l.profit,
+        margin: l.revenue ? (l.profit / l.revenue) * 100 : 0,
+        orders: l.orders,
+        customers: l.customers,
+        promoShare: l.promo_share * 100,
+        aov: l.aov,
+        repeat: l.repeat_rate * 100,
+        wastedQty: l.wasted_qty,
+        rating: l.avg_rating,
+        driverShare: l.profit_driver_revenue_share * 100,
+      },
+      trendMonthly,
+      menu: detail.data.menu,
+      classes,
+      channels: (over.data?.channels ?? []).map((c) => ({ name: c.channel, value: c.orders })),
+      totalChannelOrders: (over.data?.channels ?? []).reduce((s, c) => s + c.orders, 0),
+      wasteCost: branchWaste?.cost ?? 0,
+      wasteShare: networkWaste ? ((branchWaste?.cost ?? 0) / networkWaste) * 100 : 0,
+    }
+  }, [detail.data, over.data, inv.data])
+
+  return { data: shaped, loading, error, refetch }
+}

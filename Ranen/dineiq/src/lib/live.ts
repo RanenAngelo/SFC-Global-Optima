@@ -1558,3 +1558,126 @@ export function usePromotionsData() {
 
   return { data: shaped, loading, error, refetch }
 }
+
+/* ───────────────────────────── Ratings ───────────────────────────── */
+
+export type RatingReview = {
+  id: string
+  customer: string
+  itemId: string
+  item: string
+  itemAvg: number
+  itemClass: string
+  locationId: string
+  location: string
+  orderId: string
+  rating: number
+  date: string
+}
+
+export type RatedItem = {
+  id: string
+  name: string
+  rating: number
+  n: number
+  units: number
+  margin: number
+  repeat: number
+  class: string
+}
+
+export function useRatingsData() {
+  const ratings = useApi<{
+    distribution: { rating: number; n: number }[]
+    trend: { m: string; avg_rating: number; n: number }[]
+    by_item: { item_id: string; item_name: string; avg_rating: number; n: number; performance_class: string; contribution_margin: number; units_sold: number; repeat_purchase_rate: number }[]
+    by_location: { restaurant_id: string; avg_rating: number; n: number }[]
+    anomalies: { kind: string; item_id: string; date: string; avg_rating: number; n: number; z: number | null }[]
+    recent: { rating_id: string; customer_id: string; item_id: string; restaurant_id: string; order_id: string; rating: number; review_date: string; item_name: string }[]
+  }>('/ratings')
+  const { options: meta } = useMeta()
+
+  const loading = ratings.loading
+  const error = ratings.error
+  const refetch = () => ratings.refetch()
+
+  const shaped = useMemo(() => {
+    if (!ratings.data) return null
+    const restName = (id: string) => meta?.restaurants.find((r) => r.restaurant_id === id)?.restaurant_name ?? id
+    const itemOf: Record<string, (typeof ratings.data.by_item)[number]> = {}
+    for (const i of ratings.data.by_item) itemOf[i.item_id] = i
+
+    const totalN = ratings.data.distribution.reduce((s, d) => s + d.n, 0)
+    const overall = totalN ? ratings.data.distribution.reduce((s, d) => s + d.rating * d.n, 0) / totalN : 0
+    const five = ratings.data.distribution.find((d) => d.rating === 5)?.n ?? 0
+    const neg = ratings.data.distribution.filter((d) => d.rating <= 2).reduce((s, d) => s + d.n, 0)
+    const maxDist = Math.max(1, ...ratings.data.distribution.map((d) => d.n))
+
+    const items: RatedItem[] = ratings.data.by_item.map((i) => ({
+      id: i.item_id,
+      name: i.item_name,
+      rating: Math.round(i.avg_rating * 100) / 100,
+      n: i.n,
+      units: i.units_sold,
+      margin: Math.round(i.contribution_margin * 100) / 100,
+      repeat: Math.round(i.repeat_purchase_rate * 1000) / 10,
+      class: i.performance_class,
+    }))
+    const withBase = items.filter((i) => i.n >= 10)
+    const topRated = [...withBase].sort((x, y) => y.rating - x.rating).slice(0, 4)
+    const lowRated = [...withBase].sort((x, y) => x.rating - y.rating).slice(0, 4)
+
+    const locBars = ratings.data.by_location.map((l) => ({
+      location: restName(l.restaurant_id).length > 26 ? `${restName(l.restaurant_id).slice(0, 25)}…` : restName(l.restaurant_id),
+      rating: Math.round(l.avg_rating * 100) / 100,
+      n: l.n,
+    }))
+
+    const scatter = items.map((i) => ({ name: i.name, rating: i.rating, margin: i.margin, class: i.class }))
+    const classes = Array.from(new Set(items.map((i) => i.class)))
+
+    const reviews: RatingReview[] = ratings.data.recent.map((r) => ({
+      id: r.rating_id,
+      customer: r.customer_id,
+      itemId: r.item_id,
+      item: r.item_name,
+      itemAvg: itemOf[r.item_id] ? Math.round(itemOf[r.item_id].avg_rating * 100) / 100 : 0,
+      itemClass: itemOf[r.item_id]?.performance_class ?? '—',
+      locationId: r.restaurant_id,
+      location: restName(r.restaurant_id),
+      orderId: r.order_id,
+      rating: r.rating,
+      date: fmtDate(r.review_date),
+    }))
+
+    const anomalies = ratings.data.anomalies.map((a, i) => ({
+      id: `an-${i}`,
+      kind: a.kind === 'identical_burst' ? 'Identical burst' : a.kind,
+      itemId: a.item_id,
+      item: itemOf[a.item_id]?.item_name ?? a.item_id,
+      detail: `${num(a.n)} identical ${a.avg_rating.toFixed(1)}★ ratings${a.date ? ` on ${fmtDate(a.date)}` : ''} — possible ballot-stuffing or a data glitch.`,
+      when: a.date ? fmtDate(a.date) : 'Across the window',
+    }))
+
+    return {
+      overall: Math.round(overall * 100) / 100,
+      totalN,
+      five,
+      fiveShare: totalN ? (five / totalN) * 100 : 0,
+      neg,
+      dist: ratings.data.distribution,
+      maxDist,
+      trend: ratings.data.trend,
+      items: [...items].sort((x, y) => y.n - x.n),
+      topRated,
+      lowRated,
+      locBars,
+      scatter,
+      classes,
+      reviews,
+      anomalies,
+    }
+  }, [ratings.data, meta])
+
+  return { data: shaped, loading, error, refetch }
+}

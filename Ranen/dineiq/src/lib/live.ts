@@ -2011,3 +2011,53 @@ export function useAnomaliesData() {
 
   return { data: shaped, loading: q.loading || items.loading, error: q.error ?? items.error, refetch: q.refetch }
 }
+
+/* ───────────────────────────── Reports ───────────────────────────── */
+
+export type ReportDef = {
+  id: string
+  name: string
+  desc: string
+  category: string
+  icon: string
+  tone: string
+}
+
+export const REPORT_DEFS: ReportDef[] = [
+  { id: 'menu_performance', name: 'Menu Performance', desc: 'Classified menu with revenue, margin, wastage and ratings.', category: 'Menu', icon: 'UtensilsCrossed', tone: 'ember' },
+  { id: 'profitability', name: 'Profitability', desc: 'Per-item revenue, cost, contribution margin and profit percent.', category: 'Menu', icon: 'Percent', tone: 'sage' },
+  { id: 'customer_segmentation', name: 'Customer Segmentation', desc: 'Full RFM profiles and segment assignments.', category: 'Customers', icon: 'Users', tone: 'sky' },
+  { id: 'market_basket', name: 'Market Basket Rules', desc: 'Mined association rules with support, confidence and lift.', category: 'Menu', icon: 'Network', tone: 'gold' },
+  { id: 'demand_forecast', name: 'Demand Forecast', desc: 'Model forecasts by grain with method and history depth.', category: 'Forecasting', icon: 'TrendingUp', tone: 'sky' },
+  { id: 'wastage', name: 'Wastage Summary', desc: 'Wasted quantities, costs and incidents by item.', category: 'Operations', icon: 'Trash2', tone: 'clay' },
+  { id: 'promotions', name: 'Promotion Effectiveness', desc: 'Window-vs-baseline reads for every promotion.', category: 'Marketing', icon: 'BadgePercent', tone: 'gold' },
+  { id: 'pricing', name: 'Price Elasticity', desc: 'Revision verdicts with demand response and reasons.', category: 'Menu', icon: 'Tags', tone: 'ember' },
+  { id: 'location_performance', name: 'Location Performance', desc: 'Branch revenue, profit, orders, ratings and waste.', category: 'Operations', icon: 'Store', tone: 'sky' },
+  { id: 'anomalies', name: 'Anomaly Log', desc: 'Detected spikes, bursts and high-value orders with baselines.', category: 'Operations', icon: 'AlertTriangle', tone: 'clay' },
+  { id: 'recommendations', name: 'Recommendations', desc: 'Generated actions with evidence, priority and impact.', category: 'Decisions', icon: 'Lightbulb', tone: 'sage' },
+  { id: 'model_comparison', name: 'Model Comparison', desc: 'Dual-pipeline customer and demand evidence rows.', category: 'Decisions', icon: 'GitCompareArrows', tone: 'gold' },
+]
+
+export function useReportsData() {
+  const q = useApi<{ datasets: string[]; files: string[] }>('/reports')
+  const shaped = useMemo(() => {
+    if (!q.data) return null
+    const available = new Set(q.data.datasets)
+    return { defs: REPORT_DEFS.filter((d) => available.has(d.id)), files: q.data.files }
+  }, [q.data])
+  return { data: shaped, loading: q.loading, error: q.error, refetch: q.refetch }
+}
+
+export function useReportPreview(name: string | null) {
+  const q = useApi<Record<string, unknown>[] | { customer: Record<string, unknown>[]; demand: Record<string, unknown>[] }>(
+    name ? `/reports/${name}` : null,
+    { params: { limit: 50 }, enabled: !!name },
+  )
+  const shaped = useMemo(() => {
+    if (!q.data) return null
+    const rows: Record<string, unknown>[] = Array.isArray(q.data) ? q.data : [...(q.data.customer ?? []), ...(q.data.demand ?? [])]
+    const cols = Array.from(new Set(rows.flatMap((r) => Object.keys(r)))).slice(0, 8)
+    return { rows: rows.slice(0, 50), cols, totalCols: Array.from(new Set(rows.flatMap((r) => Object.keys(r)))).length }
+  }, [q.data])
+  return { data: shaped, loading: q.loading, error: q.error }
+}

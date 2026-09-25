@@ -1,44 +1,62 @@
 import React, { useState } from 'react'
-import {
-  Badge, Button, Card, CardHeader, Checkbox, Field, Icon, Input, Select, Tabs, cn,
-} from '../../components/ui/primitives'
-import { Modal, useToast } from '../../components/ui/overlay'
+import { Badge, Button, Card, CardHeader, Icon, Select, Tabs, cn } from '../../components/ui/primitives'
+import { useToast } from '../../components/ui/overlay'
 import { EmptyState } from '../../components/ui/states'
 import { PageHeader } from '../../components/admin/PageHeader'
-import { DateRangeSelect, LocationSelect } from '../../components/shared'
-import { REPORTS, REPORT_PREVIEW_ROWS } from '../../lib/data/analytics'
-import { money, num } from '../../lib/utils'
+import { LiveNote } from '../../components/shared'
+import { PageError, PageLoader, downloadExport, useAuth } from '../../lib/api'
+import { REPORT_DEFS, useReportPreview, useReportsData, type ReportDef } from '../../lib/live'
+import { num } from '../../lib/utils'
 
-const CATEGORIES = ['All', ...Array.from(new Set(REPORTS.map((r) => r.category)))]
+const cell = (v: unknown): string => {
+  if (v === null || v === undefined) return '—'
+  if (typeof v === 'number') return Number.isInteger(v) ? num(v) : v.toFixed(2)
+  if (typeof v === 'object') return JSON.stringify(v).slice(0, 60)
+  return String(v).slice(0, 60)
+}
 
 export default function Reports() {
   const { push } = useToast()
+  const { can } = useAuth()
   const [tab, setTab] = useState('library')
   const [category, setCategory] = useState('All')
-  const [selected, setSelected] = useState(REPORTS[0])
-  const [scheduleOpen, setScheduleOpen] = useState(false)
-  const [range, setRange] = useState('Last 30 days')
-  const [savedOnly, setSavedOnly] = useState(false)
+  const [selectedId, setSelectedId] = useState('menu_performance')
+  const { data, loading, error, refetch } = useReportsData()
+  const { data: preview, loading: previewLoading } = useReportPreview(tab === 'preview' ? selectedId : null)
 
-  const rows = REPORTS.filter((r) => (category === 'All' || r.category === category) && (!savedOnly || r.schedule))
+  if (loading && !data) return <PageLoader />
+  if (error || !data) return <PageError message={error ?? 'No reports.'} onRetry={refetch} />
 
-  const notify = (what: string) => push({ title: `${what} (demo)`, body: 'No file is generated in this prototype', tone: 'info' })
+  const defs = data.defs.length ? data.defs : REPORT_DEFS
+  const categories = ['All', ...Array.from(new Set(defs.map((r) => r.category)))]
+  const rows = defs.filter((r) => category === 'All' || r.category === category)
+  const selected: ReportDef = defs.find((r) => r.id === selectedId) ?? defs[0]
+
+  const download = async (name: string, format: 'csv' | 'xlsx') => {
+    try {
+      await downloadExport(name, format)
+      push({ title: 'Export ready', body: `${name}.${format} downloaded from the live API.`, tone: 'success' })
+    } catch (e) {
+      push({ title: 'Export failed', body: e instanceof Error ? e.message : 'Unknown error', tone: 'error' })
+    }
+  }
 
   return (
     <div>
       <PageHeader
         eyebrow="Reporting"
         title="Reports"
-        subtitle="Preview, schedule and export demo reports across sales, menu, customers, wastage and forecasting."
-        demoNote="Export, print and scheduling controls are visual only — no report file is generated in this prototype."
+        subtitle="Preview and export live datasets across sales, menu, customers, wastage and forecasting."
+        demoNote="Live dataset exports in CSV and XLSX. Scheduling and PDF are not available in this build."
+        onRefresh={refetch}
       />
 
       <div className="mb-5 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { l: 'Available reports', v: `${REPORTS.length}`, i: 'FileBarChart', t: 'text-ember-600' },
-          { l: 'Scheduled', v: `${REPORTS.filter((r) => r.schedule).length}`, i: 'CalendarClock', t: 'text-sky-600' },
-          { l: 'Last generated', v: 'Today, 7:05 AM', i: 'Clock', t: 'text-gold-600' },
-          { l: 'Default format', v: 'PDF', i: 'FileText', t: 'text-sage-600' },
+          { l: 'Available reports', v: num(defs.length), i: 'FileBarChart', t: 'text-ember-600' },
+          { l: 'Export formats', v: 'CSV · XLSX', i: 'Sheet', t: 'text-sky-600' },
+          { l: 'Preview rows', v: '50', i: 'Eye', t: 'text-gold-600' },
+          { l: 'Export access', v: can('manager') ? 'Manager ✓' : 'Manager only', i: 'Lock', t: 'text-sage-600' },
         ].map((s) => (
           <Card key={s.l} className="flex items-center gap-3.5 p-4">
             <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-canvas-deep', s.t)}>
@@ -58,14 +76,14 @@ export default function Reports() {
         tabs={[
           { label: 'Report library', value: 'library' },
           { label: 'Preview', value: 'preview' },
-          { label: 'Saved & scheduled', value: 'scheduled' },
+          { label: 'Downloads', value: 'downloads' },
         ]}
       />
 
       {tab === 'library' && (
         <div className="mt-5">
           <div className="mb-4 flex flex-wrap items-center gap-2">
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <button
                 key={c}
                 onClick={() => setCategory(c)}
@@ -84,7 +102,7 @@ export default function Reports() {
               <EmptyState
                 variant="generic"
                 title="No reports in this category"
-                message="Choose another category to see the available demo reports."
+                message="Choose another category to see the available reports."
                 action={
                   <Button size="sm" variant="secondary" icon="RotateCcw" onClick={() => setCategory('All')}>
                     Show all reports
@@ -105,7 +123,7 @@ export default function Reports() {
                           r.tone === 'ember' ? 'bg-ember-50 text-ember-600' : r.tone === 'sky' ? 'bg-sky-50 text-sky-600' : r.tone === 'sage' ? 'bg-sage-50 text-sage-600' : r.tone === 'gold' ? 'bg-gold-50 text-gold-600' : 'bg-clay-50 text-clay-600',
                         )}
                       >
-                        <Icon name={r.format === 'XLSX' ? 'Sheet' : 'FileText'} size={20} />
+                        <Icon name={r.icon} size={20} />
                       </span>
                       <Badge tone="neutral">{r.category}</Badge>
                     </div>
@@ -115,16 +133,16 @@ export default function Reports() {
 
                     <dl className="mt-3.5 space-y-1.5 text-[12px]">
                       <div className="flex justify-between gap-3">
-                        <dt className="text-ink-faint">Last run</dt>
-                        <dd className="font-semibold text-ink-soft">{r.lastRun}</dd>
+                        <dt className="text-ink-faint">Dataset</dt>
+                        <dd className="font-mono font-semibold text-ink-soft">{r.id}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
                         <dt className="text-ink-faint">Format</dt>
-                        <dd className="font-semibold text-ink-soft">{r.format}</dd>
+                        <dd className="font-semibold text-ink-soft">CSV · XLSX</dd>
                       </div>
                       <div className="flex justify-between gap-3">
-                        <dt className="text-ink-faint">Schedule</dt>
-                        <dd className="font-semibold text-ink-soft">{r.schedule}</dd>
+                        <dt className="text-ink-faint">Refresh</dt>
+                        <dd className="font-semibold text-ink-soft">Live query</dd>
                       </div>
                     </dl>
 
@@ -134,20 +152,17 @@ export default function Reports() {
                         variant={active ? 'primary' : 'secondary'}
                         icon="Eye"
                         onClick={() => {
-                          setSelected(r)
+                          setSelectedId(r.id)
                           setTab('preview')
                         }}
                       >
                         Preview
                       </Button>
-                      <Button size="xs" variant="secondary" icon="FileText" onClick={() => notify('PDF export started')}>
-                        PDF
-                      </Button>
-                      <Button size="xs" variant="secondary" icon="Sheet" onClick={() => notify('CSV export started')}>
+                      <Button size="xs" variant="secondary" icon="Sheet" onClick={() => void download(r.id, 'csv')}>
                         CSV
                       </Button>
-                      <Button size="xs" variant="ghost" icon="CalendarClock" onClick={() => setScheduleOpen(true)}>
-                        Schedule
+                      <Button size="xs" variant="secondary" icon="Sheet" onClick={() => void download(r.id, 'xlsx')}>
+                        XLSX
                       </Button>
                     </div>
                   </Card>
@@ -162,19 +177,16 @@ export default function Reports() {
         <div className="mt-5">
           <Card className="mb-4">
             <div className="flex flex-wrap items-center gap-2 border-b border-line p-4">
-              <Select value={selected.id} onChange={(e) => setSelected(REPORTS.find((r) => r.id === e.target.value) ?? REPORTS[0])} options={REPORTS.map((r) => ({ label: r.name, value: r.id }))} className="w-full sm:w-72" />
-              <Select value={range} onChange={(e) => setRange(e.target.value)} className="w-auto" options={['Last 7 days', 'Last 30 days', 'Last 90 days', 'Month to date'].map((r) => ({ label: r, value: r }))} />
-              <LocationSelect />
-              <DateRangeSelect className="hidden md:block" />
+              <Select value={selected.id} onChange={(e) => setSelectedId(e.target.value)} options={defs.map((r) => ({ label: r.name, value: r.id }))} className="w-full sm:w-72" />
               <div className="ml-auto flex gap-2">
-                <Button size="sm" variant="secondary" icon="Printer" onClick={() => notify('Print dialog opened')}>
+                <Button size="sm" variant="secondary" icon="Printer" onClick={() => window.print()}>
                   Print
                 </Button>
-                <Button size="sm" variant="secondary" icon="Sheet" onClick={() => notify('CSV export started')}>
+                <Button size="sm" variant="secondary" icon="Sheet" onClick={() => void download(selected.id, 'csv')}>
                   Export CSV
                 </Button>
-                <Button size="sm" icon="FileText" onClick={() => notify('PDF export started')}>
-                  Export PDF
+                <Button size="sm" icon="Sheet" onClick={() => void download(selected.id, 'xlsx')}>
+                  Export XLSX
                 </Button>
               </div>
             </div>
@@ -189,55 +201,60 @@ export default function Reports() {
                     <p className="mt-1 text-[13px] text-ink-muted">{selected.desc}</p>
                   </div>
                   <div className="text-right text-[12px] text-ink-muted">
-                    <p className="font-semibold text-ink">Maison Ember</p>
+                    <p className="font-semibold text-ink">DineIQ Network</p>
                     <p>All locations</p>
-                    <p>{range}</p>
-                    <p>Generated {selected.lastRun}</p>
+                    <p className="font-mono">{selected.id}</p>
+                    <p>Live preview · 50 rows</p>
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  {[
-                    { l: 'Revenue', v: money(1248500, { compact: true }) },
-                    { l: 'Orders', v: '4,286' },
-                    { l: 'Avg order', v: money(1140) },
-                    { l: 'Margin', v: '39.0%' },
-                  ].map((s) => (
-                    <div key={s.l} className="rounded-xl border border-line p-3.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{s.l}</p>
-                      <p className="mt-1 font-display text-[18px] font-semibold text-ink">{s.v}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <h3 className="mt-8 font-display text-[16px] font-semibold text-ink">Menu performance summary</h3>
-                <table className="mt-3 w-full text-left">
-                  <thead>
-                    <tr className="border-b border-line">
-                      {['Item', 'Units', 'Revenue', 'Cost', 'Contribution', 'Margin'].map((h) => (
-                        <th key={h} className="py-2 text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">
-                          {h}
-                        </th>
+                {previewLoading && <p className="mt-6 text-[13px] text-ink-muted">Loading preview…</p>}
+                {!previewLoading && preview && (
+                  <>
+                    <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                      {[
+                        { l: 'Rows shown', v: num(preview.rows.length) },
+                        { l: 'Columns', v: num(preview.totalCols) },
+                        { l: 'Category', v: selected.category },
+                        { l: 'Source', v: 'Live API' },
+                      ].map((s) => (
+                        <div key={s.l} className="rounded-xl border border-line p-3.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{s.l}</p>
+                          <p className="mt-1 font-display text-[18px] font-semibold text-ink">{s.v}</p>
+                        </div>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {REPORT_PREVIEW_ROWS.map((r) => (
-                      <tr key={r.item} className="border-b border-line/60">
-                        <td className="py-2 text-[12.5px] font-medium text-ink">{r.item}</td>
-                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{num(r.units)}</td>
-                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{money(r.revenue, { compact: true })}</td>
-                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{money(r.cost, { compact: true })}</td>
-                        <td className="py-2 text-[12.5px] tabular-nums text-ink-soft">{money(r.margin, { compact: true })}</td>
-                        <td className="py-2 text-[12.5px] font-semibold tabular-nums text-ink">{r.marginPct.toFixed(1)}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </div>
+
+                    <h3 className="mt-8 font-display text-[16px] font-semibold text-ink">Data preview</h3>
+                    <div className="overflow-x-auto">
+                      <table className="mt-3 w-full text-left">
+                        <thead>
+                          <tr className="border-b border-line">
+                            {preview.cols.map((h) => (
+                              <th key={h} className="py-2 pr-3 font-mono text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {preview.rows.slice(0, 12).map((r, i) => (
+                            <tr key={i} className="border-b border-line/60">
+                              {preview.cols.map((c) => (
+                                <td key={c} className="py-2 pr-3 text-[12px] tabular-nums text-ink-soft">
+                                  {cell(r[c])}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
 
                 <p className="mt-6 rounded-lg bg-canvas px-3.5 py-3 text-[11.5px] leading-relaxed text-ink-muted">
-                  Demo report preview. Values shown are static placeholders and no report file is generated, downloaded or
-                  emailed in this prototype.
+                  Live preview of the first rows. Full datasets download via CSV or XLSX export above.
                 </p>
 
                 <div className="mt-6 flex items-center justify-between border-t border-line pt-4 text-[11px] text-ink-faint">
@@ -250,134 +267,36 @@ export default function Reports() {
         </div>
       )}
 
-      {tab === 'scheduled' && (
-        <div className="mt-5 grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+      {tab === 'downloads' && (
+        <div className="mt-5">
           <Card>
-            <CardHeader
-              title="Saved reports"
-              subtitle="Reports with a demo delivery schedule"
-              className="border-b"
-              actions={
-                <Checkbox label="Scheduled only" checked={savedOnly} onChange={() => setSavedOnly((v) => !v)} className="!py-0" />
-              }
-            />
+            <CardHeader title="All datasets" subtitle="One-click live exports — CSV or XLSX" className="border-b" />
             <div className="divide-y divide-line">
-              {rows.map((r) => (
+              {defs.map((r) => (
                 <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
                   <div className="min-w-0">
                     <p className="truncate text-[13.5px] font-semibold text-ink">{r.name}</p>
-                    <p className="truncate text-[11.5px] text-ink-muted">
-                      {r.schedule} · {r.format} · last run {r.lastRun}
+                    <p className="truncate font-mono text-[11.5px] text-ink-muted">
+                      {r.id} · {r.category}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge tone="sage" dot>
-                      Scheduled
-                    </Badge>
-                    <Button size="xs" variant="secondary" icon="Pencil" onClick={() => setScheduleOpen(true)}>
-                      Edit
+                    <Button size="xs" variant="secondary" icon="Sheet" onClick={() => void download(r.id, 'csv')}>
+                      CSV
                     </Button>
-                    <Button size="xs" variant="ghost" icon="Send" onClick={() => notify('Report delivery triggered')}>
-                      Send now
+                    <Button size="xs" variant="secondary" icon="Sheet" onClick={() => void download(r.id, 'xlsx')}>
+                      XLSX
                     </Button>
                   </div>
                 </div>
               ))}
             </div>
           </Card>
-
-          <Card className="p-5">
-            <h3 className="font-display text-[16px] font-semibold text-ink">Schedule a report</h3>
-            <p className="mt-1 text-[12.5px] text-ink-muted">Demo scheduling form — no schedule is created.</p>
-            <div className="mt-4 space-y-4">
-              <Field label="Report">
-                <Select options={REPORTS.map((r) => ({ label: r.name, value: r.id }))} />
-              </Field>
-              <Field label="Frequency">
-                <Select
-                  options={[
-                    { label: 'Daily', value: 'daily' },
-                    { label: 'Weekly — Monday', value: 'weekly' },
-                    { label: 'Monthly — 1st', value: 'monthly' },
-                    { label: 'Quarterly', value: 'quarterly' },
-                  ]}
-                />
-              </Field>
-              <Field label="Format">
-                <Select
-                  options={[
-                    { label: 'PDF', value: 'pdf' },
-                    { label: 'CSV', value: 'csv' },
-                    { label: 'Excel (XLSX)', value: 'xlsx' },
-                  ]}
-                />
-              </Field>
-              <Field label="Recipients" hint="Comma separated email addresses">
-                <Input placeholder="owner@maisonember.pk, ops@maisonember.pk" />
-              </Field>
-              <div className="space-y-2">
-                <Checkbox label="Include executive summary" defaultChecked />
-                <Checkbox label="Include item-level detail" defaultChecked />
-                <Checkbox label="Include charts" defaultChecked />
-              </div>
-              <Button block icon="CalendarClock" onClick={() => notify('Schedule saved')}>
-                Save schedule
-              </Button>
-            </div>
-          </Card>
+          <div className="mt-4">
+            <LiveNote>Exports query the live serving database. XLSX and CSV downloads require the manager role.</LiveNote>
+          </div>
         </div>
       )}
-
-      <Modal
-        open={scheduleOpen}
-        onClose={() => setScheduleOpen(false)}
-        title="Schedule report"
-        subtitle="Demo dialog — nothing is scheduled or emailed."
-        icon="CalendarClock"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setScheduleOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              icon="Check"
-              onClick={() => {
-                setScheduleOpen(false)
-                notify('Schedule saved')
-              }}
-            >
-              Save schedule
-            </Button>
-          </>
-        }
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Report" className="sm:col-span-2">
-            <Select options={REPORTS.map((r) => ({ label: r.name, value: r.id }))} />
-          </Field>
-          <Field label="Frequency">
-            <Select
-              options={[
-                { label: 'Daily', value: 'daily' },
-                { label: 'Weekly — Monday', value: 'weekly' },
-                { label: 'Monthly — 1st', value: 'monthly' },
-              ]}
-            />
-          </Field>
-          <Field label="Time">
-            <Input type="time" defaultValue="07:00" />
-          </Field>
-          <Field label="Format">
-            <Select options={[{ label: 'PDF', value: 'pdf' }, { label: 'CSV', value: 'csv' }, { label: 'Excel (XLSX)', value: 'xlsx' }]} />
-          </Field>
-          <Field label="Locations">
-            <Select options={[{ label: 'All locations', value: 'all' }, { label: 'Clifton Branch', value: 'clifton' }, { label: 'Downtown Branch', value: 'downtown' }, { label: 'Gulshan Branch', value: 'gulshan' }]} />
-          </Field>
-          <Field label="Recipients" className="sm:col-span-2">
-            <Input placeholder="owner@maisonember.pk, ops@maisonember.pk" />
-          </Field>
-        </div>
-      </Modal>
     </div>
   )
 }

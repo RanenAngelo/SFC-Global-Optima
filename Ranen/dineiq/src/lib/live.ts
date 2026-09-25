@@ -1049,3 +1049,105 @@ export function useCustomerDetail(customerId: string | null) {
   const q = useApi<CustomerProfile>(customerId ? `/customers/${customerId}` : null, { enabled: !!customerId })
   return { detail: q.data ?? null, loading: q.loading }
 }
+
+/* ───────────────────────────── Market basket ───────────────────────────── */
+
+export type BasketPair = {
+  id: string
+  aId: string
+  bId: string
+  a: string
+  b: string
+  support: number
+  confidence: number
+  lift: number
+  transactions: number
+  opportunity: 'High' | 'Medium' | 'Low'
+  action: string
+}
+
+export type BundleIdea = {
+  id: string
+  name: string
+  items: string[]
+  lift: number
+  confidence: number
+  evidence: string
+}
+
+export function useBasketData() {
+  const basket = useApi<{
+    rules: {
+      antecedent: string
+      consequent: string
+      support: number
+      confidence: number
+      lift: number
+      transactions: number
+      ant_name: string
+      con_name: string
+    }[]
+    bundles: { kind: string; offer: string; antecedent: string; consequent: string; support: number; confidence: number; lift: number; evidence: string }[]
+  }>('/market-basket')
+  const items = useApi<{ item_id: string; category_name: string }[]>('/menu/items')
+
+  const loading = basket.loading || items.loading
+  const error = basket.error ?? items.error
+  const refetch = () => {
+    basket.refetch()
+    items.refetch()
+  }
+
+  const shaped = useMemo(() => {
+    if (!basket.data) return null
+    const oppOf = (lift: number): BasketPair['opportunity'] => (lift >= 8 ? 'High' : lift >= 3 ? 'Medium' : 'Low')
+    const actOf = (o: string) =>
+      o === 'High' ? 'Feature as a bundle or combo' : o === 'Medium' ? 'Test a cross-sell prompt' : 'Monitor for now'
+    const pairs: BasketPair[] = basket.data.rules.map((r, i) => {
+      const o = oppOf(r.lift)
+      return {
+        id: `bp-${i}`,
+        aId: r.antecedent,
+        bId: r.consequent,
+        a: r.ant_name,
+        b: r.con_name,
+        support: Math.round(r.support * 1000) / 10,
+        confidence: Math.round(r.confidence * 1000) / 10,
+        lift: Math.round(r.lift * 1000) / 1000,
+        transactions: r.transactions,
+        opportunity: o,
+        action: actOf(o),
+      }
+    })
+    const bundles: BundleIdea[] = basket.data.bundles.map((b, i) => ({
+      id: `bd-${i}`,
+      name: b.offer,
+      items: b.offer.split(' + '),
+      lift: Math.round(b.lift * 1000) / 1000,
+      confidence: Math.round(b.confidence * 1000) / 10,
+      evidence: b.evidence,
+    }))
+
+    const catOf: Record<string, string> = {}
+    for (const m of items.data ?? []) catOf[m.item_id] = m.category_name
+    const edgeMax: Record<string, { source: string; target: string; strength: number; n: number }> = {}
+    for (const r of basket.data.rules) {
+      const ca = catOf[r.antecedent]
+      const cb = catOf[r.consequent]
+      if (!ca || !cb || ca === cb) continue
+      const key = [ca, cb].sort().join('|')
+      const e = (edgeMax[key] ??= { source: [ca, cb].sort()[0], target: [ca, cb].sort()[1], strength: 0, n: 0 })
+      e.strength = Math.max(e.strength, r.lift)
+      e.n += 1
+    }
+    const edges = Object.values(edgeMax).sort((a, b) => b.strength - a.strength).slice(0, 14)
+    const cats = Array.from(new Set(edges.flatMap((e) => [e.source, e.target])))
+
+    const avgLift = pairs.length ? pairs.reduce((s, p) => s + p.lift, 0) / pairs.length : 0
+    const top = [...pairs].sort((a, b) => b.lift - a.lift)[0]
+
+    return { pairs, bundles, cats, edges, avgLift, top }
+  }, [basket.data, items.data])
+
+  return { data: shaped, loading, error, refetch }
+}

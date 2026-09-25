@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react'
-import { Badge, Button, Card, CardHeader, Icon, SearchInput, Tooltip, cn } from '../../components/ui/primitives'
+import { Badge, Button, Card, CardHeader, Icon, SearchInput, cn } from '../../components/ui/primitives'
 import { Column, DataTable } from '../../components/ui/table'
 import { useToast } from '../../components/ui/overlay'
 import { PageHeader } from '../../components/admin/PageHeader'
-import { ChartCard } from '../../components/charts'
-import { DemoNote, FoodImage, KpiCard, MetricRow, Progress } from '../../components/shared'
-import { BASKET_PAIRS, BUNDLES, CATEGORY_PAIRING } from '../../lib/data/analytics'
-import { money } from '../../lib/utils'
+import { FoodImage, KpiCard, LiveNote, Progress } from '../../components/shared'
+import { PageError, PageLoader } from '../../lib/api'
+import { useBasketData, type BasketPair, type BundleIdea } from '../../lib/live'
+import { downloadCsv, num } from '../../lib/utils'
 
 const OPPORTUNITY_TONE: Record<string, 'sage' | 'gold' | 'sky'> = { High: 'sage', Medium: 'gold', Low: 'sky' }
 
@@ -14,13 +14,19 @@ export default function MarketBasket() {
   const { push } = useToast()
   const [query, setQuery] = useState('')
   const [minLift, setMinLift] = useState(0)
+  const { data, loading, error, refetch } = useBasketData()
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return BASKET_PAIRS.filter((p) => p.lift >= minLift).filter((p) => !q || p.a.toLowerCase().includes(q) || p.b.toLowerCase().includes(q))
-  }, [query, minLift])
+    return (data?.pairs ?? [])
+      .filter((p) => p.lift >= minLift)
+      .filter((p) => !q || p.a.toLowerCase().includes(q) || p.b.toLowerCase().includes(q))
+  }, [data, query, minLift])
 
-  const rules = BASKET_PAIRS.map((p, i) => ({
+  if (loading && !data) return <PageLoader />
+  if (error || !data) return <PageError message={error ?? 'No basket data.'} onRetry={refetch} />
+
+  const rules = data.pairs.map((p, i) => ({
     id: `ar-${i}`,
     rule: `{${p.a}} → {${p.b}}`,
     antecedent: p.a,
@@ -30,14 +36,14 @@ export default function MarketBasket() {
     lift: p.lift,
   }))
 
-  const pairColumns: Column<(typeof BASKET_PAIRS)[number]>[] = [
+  const pairColumns: Column<BasketPair>[] = [
     {
       key: 'a',
       header: 'Item A',
       sort: (a, b) => a.a.localeCompare(b.a),
       render: (p) => (
         <div className="flex items-center gap-2.5">
-          <FoodImage src={p.imgA} name={p.a} className="h-8 w-8 shrink-0" ratio="fill" />
+          <FoodImage src={undefined} name={p.a} className="h-8 w-8 shrink-0" ratio="fill" />
           <span className="truncate text-[13px] font-medium text-ink">{p.a}</span>
         </div>
       ),
@@ -48,7 +54,7 @@ export default function MarketBasket() {
       sort: (a, b) => a.b.localeCompare(b.b),
       render: (p) => (
         <div className="flex items-center gap-2.5">
-          <FoodImage src={p.imgB} name={p.b} className="h-8 w-8 shrink-0" ratio="fill" />
+          <FoodImage src={undefined} name={p.b} className="h-8 w-8 shrink-0" ratio="fill" />
           <span className="truncate text-[13px] font-medium text-ink">{p.b}</span>
         </div>
       ),
@@ -58,7 +64,7 @@ export default function MarketBasket() {
       header: 'Support',
       align: 'right',
       sort: (a, b) => a.support - b.support,
-      headerTip: 'Share of demo baskets containing both items',
+      headerTip: 'Share of baskets containing both items',
       render: (p) => <span className="tabular-nums text-ink-soft">{p.support}%</span>,
     },
     {
@@ -70,7 +76,7 @@ export default function MarketBasket() {
       render: (p) => (
         <div className="flex items-center justify-end gap-2">
           <Progress value={p.confidence} className="hidden w-14 sm:block" tone="ember" height={5} />
-          <span className="w-10 tabular-nums text-ink-soft">{p.confidence}%</span>
+          <span className="w-12 tabular-nums text-ink-soft">{p.confidence}%</span>
         </div>
       ),
     },
@@ -81,7 +87,7 @@ export default function MarketBasket() {
       sort: (a, b) => a.lift - b.lift,
       headerTip: 'How much more often the pair appears than expected by chance',
       render: (p) => (
-        <span className={cn('rounded-full px-2 py-0.5 text-[12px] font-bold', p.lift >= 3 ? 'bg-sage-50 text-sage-700' : p.lift >= 2 ? 'bg-gold-50 text-gold-600' : 'bg-canvas-deep text-ink-muted')}>
+        <span className={cn('rounded-full px-2 py-0.5 text-[12px] font-bold', p.lift >= 8 ? 'bg-sage-50 text-sage-700' : p.lift >= 3 ? 'bg-gold-50 text-gold-600' : 'bg-canvas-deep text-ink-muted')}>
           {p.lift.toFixed(2)}
         </span>
       ),
@@ -130,48 +136,66 @@ export default function MarketBasket() {
       render: (r) => (
         <div className="flex items-center justify-center gap-1">
           {[1, 2, 3, 4, 5].map((i) => (
-            <span key={i} className={cn('h-1.5 w-1.5 rounded-full', r.lift / 0.8 >= i ? 'bg-ember-500' : 'bg-line')} />
+            <span key={i} className={cn('h-1.5 w-1.5 rounded-full', r.lift / 4 >= i ? 'bg-ember-500' : 'bg-line')} />
           ))}
         </div>
       ),
     },
   ]
 
-  /* ── Category network (SVG) ─────────────────────────────── */
-  const cats = ['Burgers', 'Pizza', 'Rice & Bowls', 'Pasta', 'Main Course', 'Starters', 'Desserts', 'Beverages']
-  const nodes = cats.map((c, i) => {
-    const angle = (i / cats.length) * Math.PI * 2 - Math.PI / 2
+  /* ── Category network (SVG, live edges) ─────────────────── */
+  const nodes = data.cats.map((c, i) => {
+    const angle = (i / Math.max(1, data.cats.length)) * Math.PI * 2 - Math.PI / 2
     return { id: c, x: 190 + Math.cos(angle) * 132, y: 175 + Math.sin(angle) * 132 }
   })
   const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]))
-  const maxStrength = Math.max(...CATEGORY_PAIRING.map((p) => p.strength))
+  const maxStrength = Math.max(1, ...data.edges.map((p) => p.strength))
+  const short = (c: string) => c.split(' ')[0]
+
+  const copyText = (text: string, title: string) => {
+    void navigator.clipboard.writeText(text).then(
+      () => push({ title, tone: 'success' }),
+      () => push({ title: 'Copy failed', tone: 'error' }),
+    )
+  }
+
+  const exportBundles = () => {
+    downloadCsv(
+      'bundle-ideas.csv',
+      ['Bundle', 'Items', 'Lift', 'Confidence %', 'Evidence'],
+      data.bundles.map((b: BundleIdea) => [b.name, b.items.join(' | '), b.lift.toFixed(3), b.confidence.toFixed(1), b.evidence]),
+    )
+    push({ title: 'Bundle ideas exported', body: `${data.bundles.length} ideas saved as CSV`, tone: 'success' })
+  }
 
   return (
     <div>
       <PageHeader
         eyebrow="MenuMatrix Dining Intelligence"
         title="Market-Basket Analysis"
-        subtitle="See how dishes tend to appear together in demo baskets, and where bundling or cross-selling could be explored."
-        demoNote="Support, confidence and lift values are hand-written demonstration numbers. No association-rule mining is performed."
+        subtitle="Live association rules from basket mining — where bundling or cross-selling can lift the cheque."
+        demoNote="Rules mined from live orders: support, confidence and lift are real pipeline output."
+        onRefresh={refetch}
+        dataset="market_basket"
       />
 
       <div className="mb-5 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Pairs analysed" value={`${BASKET_PAIRS.length}`} compare="demo basket pairs" icon="Network" tone="ember" />
-        <KpiCard label="Average lift" value="2.51" compare="across demo pairs" icon="TrendingUp" tone="sage" />
-        <KpiCard label="Strongest pair" value="3.42" compare="Signature Smash + Truffle Fries" icon="Sparkles" tone="gold" />
-        <KpiCard label="Bundle opportunities" value="4" compare="illustrative" icon="PackagePlus" tone="sky" />
+        <KpiCard label="Pairs analysed" value={num(data.pairs.length)} compare="mined rules" icon="Network" tone="ember" />
+        <KpiCard label="Average lift" value={data.avgLift.toFixed(2)} compare="across rules" icon="TrendingUp" tone="sage" />
+        <KpiCard label="Strongest pair" value={data.top ? data.top.lift.toFixed(2) : '—'} compare={data.top ? `${data.top.a} + ${data.top.b}` : '—'} icon="Sparkles" tone="gold" />
+        <KpiCard label="Bundle opportunities" value={num(data.bundles.length)} compare="cross-sell ideas" icon="PackagePlus" tone="sky" />
       </div>
 
       {/* Frequently purchased together */}
       <Card className="mb-5">
-        <CardHeader title="Frequently purchased together" subtitle="Top demo pairs by lift" icon="Sparkles" className="border-b" />
+        <CardHeader title="Frequently purchased together" subtitle="Top pairs by lift — live" icon="Sparkles" className="border-b" />
         <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
-          {BASKET_PAIRS.slice(0, 6).map((p) => (
+          {[...data.pairs].sort((a, b) => b.lift - a.lift).slice(0, 6).map((p) => (
             <div key={p.id} className="rounded-2xl border border-line bg-white p-4 transition-colors hover:border-line-strong">
               <div className="flex items-center gap-2">
-                <FoodImage src={p.imgA} name={p.a} className="h-12 w-12 shrink-0" ratio="fill" />
+                <FoodImage src={undefined} name={p.a} className="h-12 w-12 shrink-0" ratio="fill" />
                 <Icon name="Plus" size={14} className="shrink-0 text-ink-faint" />
-                <FoodImage src={p.imgB} name={p.b} className="h-12 w-12 shrink-0" ratio="fill" />
+                <FoodImage src={undefined} name={p.b} className="h-12 w-12 shrink-0" ratio="fill" />
                 <Badge tone={OPPORTUNITY_TONE[p.opportunity] ?? 'neutral'} className="ml-auto">
                   Lift {p.lift.toFixed(2)}
                 </Badge>
@@ -184,14 +208,14 @@ export default function MarketBasket() {
                   <span>Support</span>
                   <span className="font-semibold tabular-nums text-ink-soft">{p.support}%</span>
                 </div>
-                <Progress value={p.support * 4} tone="ember" height={4} />
+                <Progress value={Math.min(100, p.support * 4)} tone="ember" height={4} />
                 <div className="flex items-center justify-between text-[11.5px] text-ink-muted">
                   <span>Confidence</span>
                   <span className="font-semibold tabular-nums text-ink-soft">{p.confidence}%</span>
                 </div>
                 <Progress value={p.confidence} tone="sage" height={4} />
               </div>
-              <p className="mt-3 rounded-lg bg-canvas px-2.5 py-1.5 text-[11.5px] leading-snug text-ink-muted">{p.action}</p>
+              <p className="mt-3 rounded-lg bg-canvas px-2.5 py-1.5 text-[11.5px] leading-snug text-ink-muted">{p.action} · in {num(p.transactions)} orders</p>
             </div>
           ))}
         </div>
@@ -200,10 +224,10 @@ export default function MarketBasket() {
       {/* Category network + bundles */}
       <div className="mb-5 grid gap-4 xl:grid-cols-[1.1fr_1.3fr]">
         <Card>
-          <CardHeader title="Category pairing network" subtitle="Strength of association between menu categories" className="border-b" />
+          <CardHeader title="Category pairing network" subtitle="Live edges from mined rules" className="border-b" />
           <div className="p-4">
             <svg viewBox="0 0 380 350" className="w-full" role="img" aria-label="Category pairing network diagram">
-              {CATEGORY_PAIRING.map((p, i) => {
+              {data.edges.map((p, i) => {
                 const a = nodeMap[p.source]
                 const b = nodeMap[p.target]
                 if (!a || !b) return null
@@ -227,14 +251,14 @@ export default function MarketBasket() {
                 <g key={n.id}>
                   <circle cx={n.x} cy={n.y} r={26} fill="#fff" stroke="#E9E2D9" strokeWidth={1.5} />
                   <circle cx={n.x} cy={n.y} r={26} fill="#B54E17" fillOpacity={0.06} />
-                  <text x={n.x} y={n.y + 3.5} textAnchor="middle" fontSize={n.id.length > 10 ? 7.5 : 9} fontWeight={700} fill="#1D1B19" fontFamily="Inter, sans-serif">
-                    {n.id.split(' ')[0]}
+                  <text x={n.x} y={n.y + 3.5} textAnchor="middle" fontSize={short(n.id).length > 10 ? 7.5 : 9} fontWeight={700} fill="#1D1B19" fontFamily="Inter, sans-serif">
+                    {short(n.id)}
                   </text>
                 </g>
               ))}
             </svg>
             <p className="mt-2 text-center text-[11.5px] text-ink-faint">
-              Line thickness represents the illustrative association strength between categories.
+              Line thickness is the strongest mined lift between categories · {data.edges.length} live edges.
             </p>
           </div>
         </Card>
@@ -242,23 +266,25 @@ export default function MarketBasket() {
         <Card>
           <CardHeader
             title="Recommended bundles"
-            subtitle="Illustrative combos derived from the strongest demo pairs"
+            subtitle="Cross-sell ideas from the strongest rules"
             className="border-b"
             actions={
-              <Button size="xs" variant="ghost" onClick={() => push({ title: 'Bundle ideas exported', body: 'Demo control — no file generated', tone: 'info' })} icon="Download">
+              <Button size="xs" variant="ghost" onClick={exportBundles} icon="Download">
                 Export ideas
               </Button>
             }
           />
-          <div className="grid gap-3 p-4 sm:grid-cols-2">
-            {BUNDLES.map((b) => (
+          <div className="grid max-h-[520px] gap-3 overflow-y-auto p-4 sm:grid-cols-2">
+            {data.bundles.map((b) => (
               <div key={b.id} className="overflow-hidden rounded-2xl border border-line">
-                <FoodImage src={b.img} name={b.name} ratio="wide" rounded="none" />
+                <div className="flex items-center gap-2 bg-canvas px-3.5 py-3">
+                  <FoodImage src={undefined} name={b.items[0] ?? b.name} className="h-10 w-10 shrink-0" ratio="fill" />
+                  <Icon name="Plus" size={12} className="shrink-0 text-ink-faint" />
+                  <FoodImage src={undefined} name={b.items[1] ?? b.name} className="h-10 w-10 shrink-0" ratio="fill" />
+                  <Badge tone="gold" className="ml-auto">Lift {b.lift.toFixed(2)}</Badge>
+                </div>
                 <div className="p-3.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-display text-[14.5px] font-semibold leading-snug text-ink">{b.name}</h4>
-                    <Badge tone="gold">Lift {b.lift}</Badge>
-                  </div>
+                  <h4 className="font-display text-[14.5px] font-semibold leading-snug text-ink">{b.name}</h4>
                   <ul className="mt-2 space-y-1">
                     {b.items.map((i) => (
                       <li key={i} className="flex items-start gap-1.5 text-[12px] text-ink-muted">
@@ -267,19 +293,16 @@ export default function MarketBasket() {
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="font-display text-[17px] font-semibold text-ink">{money(b.price)}</span>
-                    <span className="text-[12px] text-ink-faint line-through">{money(b.was)}</span>
-                  </div>
+                  <p className="mt-2.5 rounded-lg bg-canvas px-2.5 py-1.5 font-mono text-[11px] leading-snug text-ink-muted">{b.evidence}</p>
                   <Button
                     size="xs"
                     variant="secondary"
                     block
                     className="mt-2.5"
-                    icon="Plus"
-                    onClick={() => push({ title: `${b.name} saved as a draft bundle`, tone: 'success' })}
+                    icon="Copy"
+                    onClick={() => copyText(`${b.name} — ${b.evidence}`, 'Bundle idea copied')}
                   >
-                    Create bundle
+                    Copy idea
                   </Button>
                 </div>
               </div>
@@ -288,22 +311,20 @@ export default function MarketBasket() {
         </Card>
       </div>
 
-      {/* Upsell / cross-sell */}
+      {/* Cross-sell + reading guide */}
       <div className="mb-5 grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader title="Cross-sell opportunities" subtitle="Items most often added alongside a high-volume dish" className="border-b" />
+          <CardHeader title="Cross-sell opportunities" subtitle="Highest-confidence rules — live" className="border-b" />
           <div className="divide-y divide-line">
-            {BASKET_PAIRS.slice(0, 4).map((p) => (
+            {[...data.pairs].sort((a, b) => b.confidence - a.confidence).slice(0, 4).map((p) => (
               <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-[13px] font-medium text-ink">Add “{p.b}”</p>
                   <p className="text-[11.5px] text-ink-muted">to baskets containing {p.a}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-[12px] font-semibold text-ink-soft">{p.confidence}% accept</span>
-                  <Button size="xs" variant="secondary" onClick={() => push({ title: 'Cross-sell rule saved (demo)', tone: 'success' })}>
-                    Enable
-                  </Button>
+                  <span className="text-[12px] font-semibold text-ink-soft">{p.confidence}% attach</span>
+                  <Badge tone="sage">Lift {p.lift.toFixed(1)}</Badge>
                 </div>
               </div>
             ))}
@@ -311,27 +332,21 @@ export default function MarketBasket() {
         </Card>
 
         <Card>
-          <CardHeader title="Upsell opportunities" subtitle="Higher-value alternatives frequently chosen instead" className="border-b" />
-          <div className="divide-y divide-line">
+          <CardHeader title="How to read this page" subtitle="What the mining metrics mean" className="border-b" />
+          <div className="space-y-3.5 p-4">
             {[
-              { from: 'Regular basket', to: 'Large basket', delta: '+Rs. 180', note: 'Chosen in 61% of upgrade prompts' },
-              { from: '10" pizza', to: '12" pizza', delta: '+Rs. 350', note: 'Chosen in 48% of upgrade prompts' },
-              { from: 'Single patty', to: 'Double patty', delta: '+Rs. 320', note: 'Chosen in 54% of upgrade prompts' },
-              { from: 'Regular latte', to: 'Large latte', delta: '+Rs. 160', note: 'Chosen in 37% of upgrade prompts' },
-            ].map((u) => (
-              <div key={u.to} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-[13px] font-medium text-ink">
-                    {u.from} <Icon name="ArrowRight" size={12} className="mx-1 inline text-ink-faint" /> {u.to}
-                  </p>
-                  <p className="text-[11.5px] text-ink-muted">{u.note}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] font-semibold text-sage-700">{u.delta}</span>
-                  <Button size="xs" variant="secondary" onClick={() => push({ title: 'Upsell rule saved (demo)', tone: 'success' })}>
-                    Enable
-                  </Button>
-                </div>
+              { t: 'Support', d: 'How often the pair appears across all baskets. High support means a common, reliable pattern.' },
+              { t: 'Confidence', d: 'When Item A is in the basket, how often Item B is too. High confidence means a strong suggestion.' },
+              { t: 'Lift', d: 'How much more often the pair appears than chance. Lift above 1 is a real affinity; our High band starts at 8.' },
+            ].map((r) => (
+              <div key={r.t} className="flex gap-3">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ember-50 text-[12px] font-bold text-ember-600">
+                  {r.t[0]}
+                </span>
+                <span>
+                  <span className="block text-[13px] font-semibold text-ink">{r.t}</span>
+                  <span className="block text-[12.5px] leading-relaxed text-ink-muted">{r.d}</span>
+                </span>
               </div>
             ))}
           </div>
@@ -342,7 +357,7 @@ export default function MarketBasket() {
       <Card className="mb-5">
         <CardHeader
           title="Product pair table"
-          subtitle="Demo association metrics for each item pair"
+          subtitle="Live association metrics for each mined pair"
           className="border-b"
           actions={
             <div className="flex items-center gap-2">
@@ -353,9 +368,9 @@ export default function MarketBasket() {
                 aria-label="Minimum lift"
               >
                 <option value={0}>Any lift</option>
-                <option value={2}>Lift ≥ 2.0</option>
-                <option value={2.5}>Lift ≥ 2.5</option>
                 <option value={3}>Lift ≥ 3.0</option>
+                <option value={8}>Lift ≥ 8.0</option>
+                <option value={15}>Lift ≥ 15.0</option>
               </select>
             </div>
           }
@@ -391,16 +406,13 @@ export default function MarketBasket() {
       <Card>
         <CardHeader
           title="Association rules"
-          subtitle="Rule notation with demo support, confidence and lift"
+          subtitle="Mined rule notation with live support, confidence and lift"
           className="border-b"
-          actions={<Badge tone="neutral">Illustrative</Badge>}
+          actions={<Badge tone="sage">Live</Badge>}
         />
         <DataTable columns={ruleColumns} rows={rules} rowKey={(r) => r.id} pageSize={8} initialSort={{ key: 'lift', dir: 'desc' }} />
         <div className="border-t border-line p-4">
-          <DemoNote>
-            Association rules shown here are typed examples for interface demonstration. No rule mining is executed in this
-            prototype.
-          </DemoNote>
+          <LiveNote>Rules are mined from live baskets by the association pipeline — not typed examples.</LiveNote>
         </div>
       </Card>
     </div>
